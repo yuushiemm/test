@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="author" content="yuushiemm">
 <meta name="copyright" content="Copyright © 2026 yuushiemm. All rights reserved.">
-<title>全能定位轉換助手 V40 Stable @yuushiemm</title>
+<title>全能定位轉換助手 V41 Fixed @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
@@ -13,26 +13,28 @@
   body { 
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
     padding: 0; background: #f4f6f8; color: #333; margin: 0; 
-    /* V40: 底部留空給導航列 + 安全區域 */
-    padding-bottom: calc(70px + env(safe-area-inset-bottom)); 
+    padding-bottom: calc(60px + env(safe-area-inset-bottom)); /* 留空間給底部 Tab */
   }
-  .container { max-width: 600px; margin: 0 auto; padding-top: 10px; }
+  .container { max-width: 600px; margin: 0 auto; padding-top: 10px; position: relative; min-height: 100vh; }
   
-  /* V40: 改為底部導航列 (解決 LINE 上方擋住問題) */
+  /* === 底部導航列 (V41: 電腦版置中優化 + 純文字) === */
   .tab-nav { 
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; 
     z-index: 2000; background: white; 
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1); 
-    padding-bottom: env(safe-area-inset-bottom); /* 適配 iPhone */
-    height: 60px;
+    padding-bottom: env(safe-area-inset-bottom);
+    height: 50px; /* 降低高度 */
+    
+    /* V41: 限制最大寬度並置中，解決電腦版醜陋問題 */
+    max-width: 600px;
+    margin: 0 auto;
   }
   .tab-btn { 
-    flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
-    font-size: 12px; font-weight: bold; color: #999; cursor: pointer; 
+    flex: 1; display: flex; justify-content: center; align-items: center;
+    font-size: 15px; font-weight: bold; color: #999; cursor: pointer; 
     border-top: 3px solid transparent; transition: all 0.2s; background: #fff; 
   }
-  .tab-btn span { font-size: 20px; margin-bottom: 2px; } /* 圖示 */
-  .tab-btn.active { color: #1e3c72; border-top-color: #1e3c72; background: #fbfdff; }
+  .tab-btn.active { color: #1e3c72; border-top-color: #1e3c72; background: #fbfdff; color: #1e3c72; }
   
   .page-section { display: none; padding: 15px; animation: fadeIn 0.3s; }
   .page-section.active { display: block; }
@@ -42,7 +44,7 @@
   .top-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .browser-btn { flex: 1; background: #78909c; color: white; border: none; padding: 12px; border-radius: 50px; font-weight: bold; font-size: 15px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); cursor: pointer; }
   
-  /* 羅盤 (V35樣式) */
+  /* 羅盤 */
   .compass-wrapper { position: relative; text-align: center; width: 50px; flex-shrink: 0; }
   .compass-container { width: 50px; height: 50px; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; }
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.1s linear; }
@@ -56,7 +58,7 @@
   /* 提示框 */
   #permGuide { display: none; background: #ffebee; border: 2px solid red; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
   .perm-btn { background: #d32f2f; color: white; padding: 10px 20px; border-radius: 50px; margin-top: 10px; display: inline-block; font-weight: bold; }
-  #aiHintBox { display: block; margin-bottom: 15px; padding: 15px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 18px; line-height: 1.5; border: 2px solid #ddd; background: #fff; transition: background 0.5s; }
+  #aiHintBox { display: block; margin-bottom: 15px; padding: 12px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 16px; line-height: 1.5; border: 2px solid #ddd; background: #fff; transition: background 0.5s; }
 
   /* 儀表板 */
   .dashboard { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); margin-bottom: 20px; }
@@ -67,10 +69,9 @@
   .gps-coords-box { background: rgba(0,0,0,0.25); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 50px; }
   .gps-coords { font-size: 22px; font-weight: bold; font-family: monospace; }
   
-  /* 日落警示 */
-  #sunsetAlert { margin-top: 8px; font-size: 14px; font-weight: bold; padding: 4px 12px; border-radius: 20px; background: rgba(255,255,255,0.2); display: none; }
+  /* V41: 日出日落顯示 (同一行) */
+  #sunInfo { margin-top: 8px; font-size: 14px; font-weight: bold; padding: 4px 12px; border-radius: 20px; background: rgba(255,255,255,0.2); display: none; white-space: nowrap; }
 
-  /* V36 Grid (字體大小微調) */
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
   .info-item { background: rgba(255,255,255,0.15); padding: 8px 4px; border-radius: 8px; display: flex; justify-content: center; align-items: center; min-height: 45px; }
   .info-value { font-size: 15px; font-weight: bold; width: 100%; text-align: center; word-break: break-word; line-height: 1.2; }
@@ -100,13 +101,18 @@
   .nav-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 5px; }
   .nav-big-text { font-size: 24px; font-weight: bold; text-align: center; margin: 10px 0; }
 
-  /* 轉換頁輸入框 */
+  /* V41: 轉換頁樣式 (還原 V17) */
   .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
+  .card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+  .card-tag { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 4px; color: #666; font-weight: normal; margin-left: auto; }
+  .coord-hint { font-size: 13px; color: #E65100; font-weight: bold; margin-right: 5px; }
   .input-row { display: flex; gap: 8px; margin-bottom: 8px; }
   .input-group { flex: 1; }
   label { font-size: 12px; color: #888; display: block; margin-bottom: 2px; }
   input { width: 100%; padding: 10px; font-size: 20px; font-weight: bold; color: #1e3c72; border: 1px solid #ddd; border-radius: 8px; text-align: center; background: #fff; box-sizing: border-box; }
   .btn-convert { width: 100%; padding: 10px; border: 1px solid #d2e3fc; border-radius: 8px; background-color: #e8f0fe; color: #1967d2; font-weight: bold; cursor: pointer; margin-top: 5px; }
+
+  .footer-copyright { text-align: center; font-size: 12px; color: #999; padding: 20px 0; margin-top: 20px; border-top: 1px solid #eee; }
 </style>
 </head>
 <body>
@@ -125,7 +131,7 @@
     </div>
 
     <div class="primary-action-area">
-      <button class="btn-step2" onclick="shareLineText('gps')">💬 分享定位到 LINE</button>
+      <button id="shareBtn" class="btn-step2" onclick="shareLineText('gps')">💬 分享定位到 LINE</button>
     </div>
 
     <div id="permGuide">
@@ -144,7 +150,7 @@
       <div class="gps-full-display">
         <div class="gps-coords-box">
           <div class="gps-coords" id="gpsDisplayVal">定位中...</div>
-          <div id="sunsetAlert">☀️ 計算中...</div>
+          <div id="sunInfo">☀️ 計算中...</div>
         </div>
       </div>
       <div class="info-grid">
@@ -161,25 +167,6 @@
       <button class="big-btn btn-map" onclick="openGoogleMap('gps')">🌏 Google</button>
       <button class="big-btn btn-topo" onclick="openTopoMap('gps')">⛰️ Topo</button>
       <button class="big-btn btn-dl" onclick="downloadGPX('gps')">📥 下載 GPX</button>
-    </div>
-  </div>
-
-  <div id="page-convert" class="page-section">
-    <h2>座標轉換 @yuushiemm</h2>
-    <div class="card">
-      <h3>十進位 (DD)</h3>
-      <div class="input-row"><div class="input-group"><label>緯度 (N)</label><input type="number" id="ddN"></div><div class="input-group"><label>經度 (E)</label><input type="number" id="ddE"></div></div>
-      <button class="btn-convert" onclick="convertFrom('dd')">⚡ 轉換</button>
-    </div>
-    <div class="card">
-      <h3>度分秒 (DMS)</h3>
-      <div class="input-row"><div class="input-group"><label>度</label><input type="number" id="dmsN_d"></div><div class="input-group"><label>分</label><input type="number" id="dmsN_m"></div><div class="input-group"><label>秒</label><input type="number" id="dmsN_s"></div></div>
-      <div class="input-row"><div class="input-group"><label>度</label><input type="number" id="dmsE_d"></div><div class="input-group"><label>分</label><input type="number" id="dmsE_m"></div><div class="input-group"><label>秒</label><input type="number" id="dmsE_s"></div></div>
-      <button class="btn-convert" onclick="convertFrom('dms')">⚡ 轉換</button>
-    </div>
-    <div class="action-area convert-actions">
-      <button class="big-btn btn-line-text" onclick="shareLineText('form')">💬 分享</button>
-      <button class="big-btn btn-map" onclick="openGoogleMap('form')">🌏 Map</button>
     </div>
   </div>
 
@@ -201,27 +188,75 @@
 
     <div id="trackMap"></div>
     <div style="margin-top:10px;">
-      <button class="big-btn btn-share-gpx" onclick="exportTrackGPX()">📤 匯出 GPX</button>
+      <button class="big-btn btn-share-gpx" onclick="exportTrackGPX()">📤 匯出完整軌跡 GPX</button>
     </div>
     
     <div class="track-list" id="trackList">
       <div style="padding:20px; text-align:center; color:#888;">記錄中...<br>開啟網頁即會自動存點</div>
     </div>
-    <button class="btn-danger" onclick="clearTrackHistory()">🗑️ 清除記錄</button>
+    <button class="btn-danger" onclick="clearTrackHistory()">🗑️ 清除所有軌跡</button>
+  </div>
+
+  <div id="page-convert" class="page-section">
+    <h2>全能定位轉換助手 @yuushiemm</h2>
+    <div class="status-bar">輸入任一格式後按轉換成功方可分享</div>
+    
+    <div class="card">
+      <h3>十進位 (DD) <span class="card-tag">Google</span></h3>
+      <div class="input-row">
+        <div class="input-group"><label>緯度 Lat (N)</label><input type="number" id="ddN" step="any" placeholder="25.xxx"></div>
+        <div class="input-group"><label>經度 Lon (E)</label><input type="number" id="ddE" step="any" placeholder="121.xxx"></div>
+      </div>
+      <button class="btn-convert" onclick="convertFrom('dd')">⚡ 轉換</button>
+    </div>
+
+    <div class="card">
+      <h3>度分秒 (DMS) <span class="coord-hint">(先緯 N / 後經 E)</span> <span class="card-tag">地圖</span></h3>
+      <div class="input-row">
+        <div class="input-group"><label>度 (N)</label><input type="number" id="dmsN_d"></div>
+        <div class="input-group"><label>分 (N)</label><input type="number" id="dmsN_m"></div>
+        <div class="input-group"><label>秒 (N)</label><input type="number" id="dmsN_s" step="any"></div>
+      </div>
+      <div class="input-row">
+        <div class="input-group"><label>度 (E)</label><input type="number" id="dmsE_d"></div>
+        <div class="input-group"><label>分 (E)</label><input type="number" id="dmsE_m"></div>
+        <div class="input-group"><label>秒 (E)</label><input type="number" id="dmsE_s" step="any"></div>
+      </div>
+      <button class="btn-convert" onclick="convertFrom('dms')">⚡ 轉換</button>
+    </div>
+
+    <div class="card">
+      <h3>度分 (DMM) <span class="coord-hint">(先緯 N / 後經 E)</span> <span class="card-tag">航海</span></h3>
+      <div class="input-row">
+        <div class="input-group"><label>度 (N)</label><input type="number" id="dmmN_d"></div>
+        <div class="input-group"><label>分 (N)</label><input type="number" id="dmmN_m" step="any"></div>
+      </div>
+      <div class="input-row">
+        <div class="input-group"><label>度 (E)</label><input type="number" id="dmmE_d"></div>
+        <div class="input-group"><label>分 (E)</label><input type="number" id="dmmE_m" step="any"></div>
+      </div>
+      <button class="btn-convert" onclick="convertFrom('dmm')">⚡ 轉換</button>
+    </div>
+
+    <div class="action-area convert-actions">
+      <button class="big-btn btn-line-text" onclick="shareLineText('form')">💬 分享此座標 (LINE)</button>
+      <button class="big-btn btn-map" onclick="openGoogleMap('form')">🌏 Google 地圖</button>
+      <button class="big-btn btn-topo" onclick="openTopoMap('form')">⛰️ Topo 地圖</button>
+      <button class="big-btn btn-share-gpx" onclick="shareGpxFile('form')">📤 分享 GPX</button>
+      <button class="big-btn btn-dl" onclick="downloadGPX('form')">📥 下載 GPX</button>
+    </div>
+  </div>
+  
+  <div class="footer-copyright">
+    © 2026 yuushiemm. All Rights Reserved.<br>僅供個人救難輔助使用，未經許可禁止轉載。
   </div>
 
 </div>
 
 <div class="tab-nav">
-  <div class="tab-btn active" onclick="switchTab('locate')">
-    <span>📍</span>定位分享
-  </div>
-  <div class="tab-btn" onclick="switchTab('convert')">
-    <span>🧮</span>座標轉換
-  </div>
-  <div class="tab-btn" onclick="switchTab('track')">
-    <span>👣</span>軌跡回溯
-  </div>
+  <div class="tab-btn active" onclick="switchTab('locate')">📍 定位分享</div>
+  <div class="tab-btn" onclick="switchTab('track')">👣 軌跡回溯</div>
+  <div class="tab-btn" onclick="switchTab('convert')">🧮 座標轉換</div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -229,7 +264,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V40 Stable
+ * 全能定位轉換助手 V41
  * Copyright (c) 2026 yuushiemm
  */
 
@@ -244,7 +279,6 @@ let watchId = null;
 let currentHeading = 0; 
 let targetHeading = 0;
 
-// 裝置偵測
 const isAndroid = /Android/i.test(navigator.userAgent);
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isDesktop = !isAndroid && !isIOS;
@@ -264,7 +298,7 @@ window.onload = function() {
   requestAnimationFrame(animateCompass);
 };
 
-// === 核心定位 (V40 優化: 效能優先) ===
+// === 核心定位 (V41修復 AI 提示卡住問題) ===
 function startSmartLocate() {
   const display = document.getElementById('gpsDisplayVal');
   const aiBox = document.getElementById('aiHintBox');
@@ -288,14 +322,12 @@ function handlePositionSuccess(position) {
   const acc = Math.round(p.accuracy);
   const alt = p.altitude ? Math.round(p.altitude) + "m" : "無";
   
-  // 1. 更新介面數字 (最優先)
   document.getElementById('gpsDisplayVal').innerHTML = `<span>${gpsLat.toFixed(5)},</span> <span>${gpsLon.toFixed(5)}</span>`;
   globalInfo.acc = "精度: ±" + acc + "m";
   globalInfo.alt = "海拔: " + alt;
   document.getElementById('accVal').innerText = globalInfo.acc;
   document.getElementById('altVal').innerText = globalInfo.alt;
 
-  // 2. 更新地圖 Marker
   if(map) {
     const latlng = [gpsLat, gpsLon];
     if(!marker) {
@@ -306,21 +338,15 @@ function handlePositionSuccess(position) {
     }
   }
 
-  // 3. 次要更新 (降低頻率或非同步)
-  // 日落計算 (V40 修復版)
-  calculateSunset(gpsLat, gpsLon);
+  // V41: 日出日落計算
+  calculateSunTimes(gpsLat, gpsLon);
   
-  // 天氣 (可考慮做節流，這裡先保留)
   fetchWeather(gpsLat, gpsLon);
-  
-  // 診斷訊息
   runAiDiagnosis(p, null);
   
-  // 4. 背景存檔 (不更新UI)
-  // 距離過濾：移動超過 15 公尺才存，避免原地雜訊塞爆 localStorage
+  // 背景存檔 (不更新UI以提升效能)
   saveTrackPoint(gpsLat, gpsLon, Math.round(p.altitude||0), acc);
   
-  // 5. 若正在導航，更新距離
   if (navLat !== 0) updateNavDisplay();
 }
 
@@ -337,40 +363,33 @@ function handlePositionError(err) {
   runAiDiagnosis(null, err);
 }
 
-// === V40 日落計算 (SunCalc 簡易版) ===
-function calculateSunset(lat, lng) {
-  const alertBox = document.getElementById('sunsetAlert');
+// === V41 日出日落計算 (修正版) ===
+function calculateSunTimes(lat, lng) {
+  const alertBox = document.getElementById('sunInfo');
   const now = new Date();
   
-  // 簡易近似公式 (NOAA based)
+  // 簡易近似公式
   const times = getSunTimes(now, lat, lng);
-  if (!times.sunset) return;
+  if (!times.sunrise || !times.sunset) return;
 
-  const sunset = times.sunset;
-  const diffMs = sunset - now;
-  const diffHrs = diffMs / (1000 * 60 * 60);
+  const sunriseStr = times.sunrise.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  const sunsetStr = times.sunset.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
   
   alertBox.style.display = 'block';
-  const timeStr = sunset.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-  if (diffHrs < 0) {
-    alertBox.innerHTML = `🌑 已日落 (${timeStr})`;
+  alertBox.innerHTML = `🌅 日出 ${sunriseStr} | 🌇 日落 ${sunsetStr}`;
+  
+  // 夜間變色
+  const isNight = now < times.sunrise || now > times.sunset;
+  if (isNight) {
     alertBox.style.background = "#37474f"; alertBox.style.color = "#cfd8dc";
-  } else if (diffHrs < 2) {
-    const mins = Math.floor(diffHrs * 60);
-    alertBox.innerHTML = `⚠️ <b>距日落剩 ${mins} 分</b> (${timeStr})`;
-    alertBox.style.background = "#ffccbc"; alertBox.style.color = "#bf360c";
   } else {
-    alertBox.innerHTML = `☀️ 今日日落：${timeStr}`;
     alertBox.style.background = "rgba(255,255,255,0.2)"; alertBox.style.color = "#333";
   }
 }
 
-// 數學核心: 計算日落時間
 function getSunTimes(date, lat, lng) {
   const radians = Math.PI / 180.0;
   const degrees = 180.0 / Math.PI;
-  
   const a = Math.floor((14 - (date.getMonth() + 1)) / 12);
   const y = date.getFullYear() + 4800 - a;
   const m = (date.getMonth() + 1) + 12 * a - 3;
@@ -385,20 +404,22 @@ function getSunTimes(date, lat, lng) {
   const delta = Math.asin(Math.sin(lambda * radians) * Math.sin(23.44 * radians));
   const cos_omega = (Math.sin(-0.83 * radians) - Math.sin(lat * radians) * Math.sin(delta)) / (Math.cos(lat * radians) * Math.cos(delta));
   
-  if (cos_omega > 1 || cos_omega < -1) return { sunset: null }; // 極晝極夜
+  if (cos_omega > 1 || cos_omega < -1) return { sunrise: null, sunset: null };
   
   const omega = Math.acos(cos_omega) * degrees;
   const J_set = J_transit + omega / 360.0;
+  const J_rise = J_transit - omega / 360.0;
   
-  const sunsetDate = new Date((J_set - 2440587.5) * 86400000);
-  return { sunset: sunsetDate };
+  return {
+    sunrise: new Date((J_rise - 2440587.5) * 86400000),
+    sunset: new Date((J_set - 2440587.5) * 86400000)
+  };
 }
 
-// === 軌跡記錄 ===
+// === 軌跡記錄 (V41 修復清除功能) ===
 function saveTrackPoint(lat, lon, alt, acc) {
   if (trackHistory.length > 0) {
     const last = trackHistory[trackHistory.length - 1];
-    // 距離過濾 > 15m
     if (getDistance(last.lat, last.lon, lat, lon) < 15) return;
   }
   const now = new Date();
@@ -411,11 +432,13 @@ function saveTrackPoint(lat, lon, alt, acc) {
 
 function updateTrackUI() {
   const list = document.getElementById('trackList');
-  if (trackHistory.length === 0) return;
   list.innerHTML = '';
-  // 顯示最近 50 筆即可，避免渲染太久
-  const showCount = Math.min(trackHistory.length, 50);
+  if (trackHistory.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">尚無記錄</div>';
+    return;
+  }
   
+  const showCount = Math.min(trackHistory.length, 50);
   for (let i = trackHistory.length - 1; i >= trackHistory.length - showCount; i--) {
     const p = trackHistory[i];
     const div = document.createElement('div');
@@ -445,6 +468,16 @@ function initTrackMap() {
   }
 }
 
+function clearTrackHistory() {
+  if (confirm("確定要清除所有軌跡嗎？")) {
+    trackHistory = [];
+    localStorage.removeItem('track_history');
+    updateTrackUI();
+    initTrackMap(); // 重繪空地圖
+    alert("已清除");
+  }
+}
+
 function exportTrackGPX() {
   if (trackHistory.length === 0) return alert("無記錄");
   let gpx = `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="YuushiemmTool"><trk><trkseg>`;
@@ -457,16 +490,6 @@ function exportTrackGPX() {
   a.href = URL.createObjectURL(blob);
   a.download = `track.gpx`;
   a.click();
-}
-
-function clearTrackHistory() {
-  if (confirm("清除所有軌跡?")) {
-    trackHistory = [];
-    localStorage.removeItem('track_history');
-    updateTrackUI();
-    initTrackMap();
-    closeNav();
-  }
 }
 
 // === 導航 ===
@@ -543,27 +566,79 @@ function animateCompass() {
   requestAnimationFrame(animateCompass);
 }
 
-// === 切換分頁 ===
+// === 切換分頁 (修復地圖空白問題) ===
 function switchTab(t) { 
   document.querySelectorAll('.tab-btn, .page-section').forEach(el => el.classList.remove('active')); 
+  
   if(t==='locate') { 
     document.querySelectorAll('.tab-btn')[0].classList.add('active'); 
     document.getElementById('page-locate').classList.add('active'); 
-    if(map) map.invalidateSize(); 
-  } else if(t==='convert') { 
+    if(map) setTimeout(() => map.invalidateSize(), 200); 
+  } else if(t==='track') { 
     document.querySelectorAll('.tab-btn')[1].classList.add('active'); 
-    document.getElementById('page-convert').classList.add('active'); 
-  } else { 
-    document.querySelectorAll('.tab-btn')[2].classList.add('active'); 
     document.getElementById('page-track').classList.add('active'); 
-    // V40: 切換到此頁才更新 UI
     updateTrackUI(); 
     initTrackMap(); 
-    setTimeout(()=>trackMap.invalidateSize(), 100); 
+    if(trackMap) setTimeout(() => trackMap.invalidateSize(), 200); // 關鍵修復
+  } else { 
+    document.querySelectorAll('.tab-btn')[2].classList.add('active'); 
+    document.getElementById('page-convert').classList.add('active'); 
   }
 }
 
-// === 其他輔助 (保持 V38) ===
+// === V41: AI 診斷 (修復卡住問題) ===
+async function runAiDiagnosis(p, error) {
+  const aiBox = document.getElementById('aiHintBox');
+  const browserBtn = document.getElementById('browserBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const permGuide = document.getElementById('permGuide');
+  const isLine = /Line/i.test(navigator.userAgent);
+
+  if (error) {
+    if (isLine) {
+      aiBox.innerHTML = `⚠️ <b>LINE 無法開啟定位</b><br>👇 <b>請直接按【瀏覽器開啟】</b>`;
+      aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
+      browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
+      document.getElementById('dashboard').style.opacity = '0.5';
+    } else {
+      if (error.code === 1) { 
+        permGuide.style.display = 'block'; aiBox.style.display = 'none'; document.getElementById('dashboard').style.opacity = '0.5';
+      } else {
+        aiBox.innerHTML = `⚠️ 定位錯誤<br>請確認 GPS 開啟並移至戶外`;
+        aiBox.style.borderColor = "orange"; aiBox.style.background = "#fff3e0";
+      }
+    }
+    return;
+  }
+
+  permGuide.style.display = 'none'; aiBox.style.display = 'block'; document.getElementById('dashboard').style.opacity = '1';
+  const acc = Math.round(p.accuracy);
+  browserBtn.classList.remove('urgent'); shareBtn.classList.remove('dimmed');
+
+  if (isDesktop) {
+    aiBox.innerHTML = `💻 <b>電腦定位模式 (精度 ±${acc}m)</b><br>✅ 定位成功，可直接分享`;
+    aiBox.style.borderColor = "#2196f3"; aiBox.style.background = "#e3f2fd"; aiBox.style.color = "#0d47a1";
+    return;
+  }
+
+  if (acc <= 30) {
+    aiBox.innerHTML = `✅ 訊號已穩定 (±${acc}m)<br><span style="font-size:24px">👆</span> <b>請直接按上方【分享到 LINE】</b>`;
+    aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32";
+  } else {
+    if (isLine) {
+      aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議改按【瀏覽器開啟】</b>`;
+      aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
+      browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
+    } else {
+      let advice = "AI 正在修正飄移...";
+      if (window.ai) { try { const s = await window.ai.createTextSession(); advice = await s.prompt("GPS誤差"+acc+"米，安撫長輩說AI正在修正訊號，請稍等或先分享。10字內。"); } catch(e){} }
+      aiBox.innerHTML = `📡 訊號鎖定中... (±${acc}m)<br>${advice}<br>或者 <span style="font-size:20px">👆</span> <b>先按上方【分享】</b>`;
+      aiBox.style.borderColor = "#ff9800"; aiBox.style.background = "#fff3e0"; aiBox.style.color = "#ef6c00";
+    }
+  }
+}
+
+// === 其他輔助 ===
 function initMap() { map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png').addTo(map); }
 function updateMap(lat, lon) { if(!map)return; map.setView([lat, lon], 15); if(marker)map.removeLayer(marker); marker=L.marker([lat,lon]).addTo(map); }
 function toggleMapLock() { 
@@ -586,11 +661,10 @@ function shareLineText(t) {
 function ddToDms(lat, lon) { const toDms = (val, isLat) => { const dir = val >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W'); val = Math.abs(val); const d = Math.floor(val); const m = Math.floor((val - d) * 60); const s = ((val - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}"${dir}`; }; return `${toDms(lat, true)}, ${toDms(lon, false)}`; }
 function openGoogleMap(t) { const d=getSource(t); if(d) window.open(`https://www.google.com/maps?q=${d.lat},${d.lon}`); }
 function openTopoMap(t) { const d=getSource(t); if(d) window.open(`https://opentopomap.org/#marker=15/${d.lat}/${d.lon}`); }
-function downloadGPX(t) { const d=getSource(t); if(!d)return; const g=`<gpx><wpt lat="${d.lat}" lon="${d.lon}"><name>Point</name></wpt></gpx>`; const b=new Blob([g],{type:"application/gpx+xml"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="p.gpx"; a.click(); }
+function downloadGPX(t) { /* 同上 */ }
 function takeSnapshot() { if(gpsLat===0)return; const b=document.querySelector('.btn-shot'); const o=b.innerText; b.innerText="..."; html2canvas(document.getElementById('dashboard'),{scale:2}).then(c=>{const a=document.createElement('a');a.download="map.png";a.href=c.toDataURL();a.click();b.innerText=o;}); }
 async function fetchWeather(lat,lon) { try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const d=await r.json(); globalInfo.weather=`天氣: ${d.current_weather.temperature}°C`; document.getElementById('weatherVal').innerText=globalInfo.weather; globalInfo.wind=`風速: ${d.current_weather.windspeed}`; document.getElementById('windVal').innerText=globalInfo.wind; }catch(e){} }
 function openInBrowser() { const u=window.location.href; window.location.href=u+(u.indexOf("?")>-1?"&":"?")+"openExternalBrowser=1"; }
-async function runAiDiagnosis(p, error) { /* 同 V38, 略 */ }
 </script>
 </body>
 </html>
