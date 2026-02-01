@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>全能定位轉換助手 V22 SAR-AI @yuushiemm</title>
+<title>全能定位轉換助手 V23 AI-Logic @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
-  /* === V17 原始樣式 (基底) === */
+  /* === V17 基底樣式 (完全保留) === */
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 0; background: #f4f6f8; color: #333; margin: 0; padding-bottom: 60px; }
   .container { max-width: 600px; margin: 0 auto; }
   h2 { text-align: center; font-size: 1.2rem; color: #555; margin: 15px 0; letter-spacing: 1px; }
@@ -20,16 +20,24 @@
   .page-section.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* 頂部控制區 */
+  /* === 按鈕 1：瀏覽器開啟 (V23: LINE 環境下會變色閃爍) === */
   .top-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .browser-btn { flex: 1; background: #78909c; color: white; border: none; padding: 12px; border-radius: 50px; font-weight: bold; font-size: 15px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; text-align: left; transition: all 0.3s; }
-  
-  /* 羅盤 */
+  .browser-btn { 
+    flex: 1; background: #78909c; color: white; border: none; 
+    padding: 12px; border-radius: 50px; font-weight: bold; font-size: 15px; 
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2); cursor: pointer; 
+    display: flex; align-items: center; justify-content: center; gap: 5px; text-align: left; 
+    transition: all 0.3s; border: 2px solid transparent;
+  }
+  /* 當 AI 判定需要強制切換瀏覽器時的樣式 */
+  .browser-btn.urgent { background: #ff5722; border-color: #ffccbc; animation: pulse-btn 1s infinite; }
+  @keyframes pulse-btn { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7); } 70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(255, 87, 34, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 87, 34, 0); } }
+
   .compass-container { width: 50px; height: 50px; flex-shrink: 0; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #ddd; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.2s ease-out; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 32px; left: -4px; color: #555; font-size: 10px; font-weight: bold; }
 
-  /* === 分享按鈕 (置頂) === */
+  /* === 按鈕 2：分享 (V23: LINE 環境下會變暗，引導使用者去按上面的) === */
   .primary-action-area { margin-bottom: 15px; }
   .btn-step2 { 
     width: 100%; padding: 18px; border: none; border-radius: 12px; 
@@ -37,15 +45,18 @@
     background-color: #06C755; 
     box-shadow: 0 4px 15px rgba(6, 199, 85, 0.4); 
     display: flex; align-items: center; justify-content: center; 
-    border: 3px solid white;
-    animation: pulse-share 2s infinite;
+    border: 3px solid white; transition: all 0.3s;
   }
-  @keyframes pulse-share { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+  .btn-step2.dimmed { opacity: 0.5; background-color: #888; box-shadow: none; } /* LINE 環境下變暗 */
 
-  /* === AI 診斷區塊 === */
+  /* === AI 診斷框 === */
   #aiHintBox { display: block; margin-bottom: 15px; padding: 15px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 18px; line-height: 1.5; border: 2px solid #ddd; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-  /* 儀表板 */
+  /* 權限教學覆蓋層 (V23 新增) */
+  #permGuide { display: none; background: #ffebee; border: 2px solid red; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
+  .perm-btn { background: #d32f2f; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; display: inline-block; margin-top: 10px; font-weight: bold; }
+
+  /* 儀表板與其他 V17 樣式 */
   .dashboard { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); margin-bottom: 20px; }
   #map { height: 220px; width: 100%; border-radius: 12px; margin-top: 10px; border: 2px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; }
   .map-lock-btn { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; z-index: 1000; }
@@ -68,10 +79,8 @@
   input:focus { border-color: #1e3c72; outline: none; background: #fbfdff; }
   .btn-convert { width: 100%; padding: 10px; border: 1px solid #d2e3fc; border-radius: 8px; background-color: #e8f0fe; color: #1967d2; font-weight: bold; cursor: pointer; margin-top: 5px; }
 
-  /* 按鈕群組 */
   .secondary-action-area, .convert-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
   .big-btn { padding: 15px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-decoration: none; box-sizing: border-box; }
-  
   .btn-shot { background-color: #E91E63; }
   .btn-refresh { background-color: #795548; }
   .btn-map { background-color: #4285F4; }
@@ -103,9 +112,15 @@
     </div>
 
     <div class="primary-action-area">
-      <button class="btn-step2" onclick="shareLineText('gps')">
+      <button id="shareBtn" class="btn-step2" onclick="shareLineText('gps')">
         2、💬 分享定位到 LINE
       </button>
+    </div>
+
+    <div id="permGuide">
+      <h3>🚫 定位權限被關閉</h3>
+      <p>請依序操作：<br>1. 點擊瀏覽器網址列旁的「🔒鎖頭」或「設定」<br>2. 點選「權限」或「位置資訊」<br>3. 選擇「允許」或「使用時允許」</p>
+      <button class="perm-btn" onclick="getLocation()">✅ 設定好了，重試</button>
     </div>
 
     <div id="aiHintBox">⚠️ 正在連線衛星...</div>
@@ -206,42 +221,55 @@ window.onload = function() {
   getLocation(); 
 };
 
-// === V22 AI 搜救特化邏輯 ===
+// === V23 搜救 AI 邏輯核心 ===
 async function runAiDiagnosis(p, error) {
   const aiBox = document.getElementById('aiHintBox');
   const browserBtn = document.getElementById('browserBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const permGuide = document.getElementById('permGuide');
 
-  // 1. 錯誤處理：權限被拒 (最優先處理)
+  // 1. 錯誤處理：權限被拒 (最優先處理，卡死在此步驟直到解決)
   if (error) {
     if (error.code === 1) { // PERMISSION_DENIED
-      aiBox.innerHTML = `❌ <b>定位權限被拒絕！</b><br>請到手機「設定」開啟 GPS 權限<br>不然無法求救！`;
-      aiBox.style.borderColor = "red"; aiBox.style.background = "#ffebee"; aiBox.style.color = "red";
+      permGuide.style.display = 'block'; // 顯示教學
+      aiBox.style.display = 'none'; // 隱藏一般提示
+      document.getElementById('dashboard').style.opacity = '0.5'; // 讓儀表板變暗
     } else {
-      aiBox.innerHTML = `⚠️ 定位失敗或逾時<br>請確認 GPS 開啟並移至戶外`;
+      aiBox.innerHTML = `⚠️ 定位逾時或失敗<br>請確認 GPS 開啟並移至戶外`;
       aiBox.style.borderColor = "orange"; aiBox.style.background = "#fff3e0";
     }
     return;
   }
 
-  // 正常取得座標
+  // 成功取得座標 -> 隱藏權限教學，恢復儀表板
+  permGuide.style.display = 'none';
+  aiBox.style.display = 'block';
+  document.getElementById('dashboard').style.opacity = '1';
+
   const acc = Math.round(p.accuracy);
   const isLine = /Line/i.test(navigator.userAgent);
 
-  // 2. 判斷邏輯：
-  // 如果是 LINE，先給予溫柔提示，但鼓勵分享
+  // 2. LINE 環境判斷 (次優先)
+  // 邏輯：在 LINE 裡，精度通常很差。不引導分享，而是強制引導「切換瀏覽器」。
   if (isLine) {
-    aiBox.innerHTML = `⚠️ <b>LINE 瀏覽器可能不準 (±${acc}m)</b><br>👆 <b>建議先按【分享】回報大概位置</b><br>若有空，再點最上方【用瀏覽器開啟】`;
-    aiBox.style.borderColor = "#ff9800"; aiBox.style.background = "#fff3e0"; aiBox.style.color = "#d84315";
+    aiBox.innerHTML = `⚠️ <b>LINE 內無法精確定位</b><br><span style="font-size:24px">👆</span> <b>請務必先按最上方【用預設瀏覽器開啟】</b><br>開啟後定位才會準確！`;
+    aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
+    
+    browserBtn.classList.add('urgent'); // 讓瀏覽器按鈕瘋狂閃爍
+    shareBtn.classList.add('dimmed');   // 讓分享按鈕變暗，降低點擊慾望
     return;
   }
 
-  // 3. 精度判斷
+  // 3. 外部瀏覽器環境 (正常流程)
+  browserBtn.classList.remove('urgent');
+  shareBtn.classList.remove('dimmed');
+
   if (acc <= 40) {
-    // 精度良好 -> 綠燈
+    // 精度良好 -> 綠燈，手指向上引導分享
     aiBox.innerHTML = `✅ 定位良好 (±${acc}m)<br><span style="font-size:24px">👆</span> <b>請直接按上方【分享到 LINE】</b>`;
     aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32";
   } else {
-    // 精度不佳 -> 但搜救優先，先分享！
+    // 精度不佳 (但已經在外部瀏覽器) -> 依照 V22 邏輯：先分享再移動
     let advice = "請先分享座標";
     if (window.ai) {
        try { const s = await window.ai.createTextSession(); advice = await s.prompt("GPS誤差"+acc+"米，引導長輩先分享再試著移動。10字內。"); } catch(e){}
@@ -280,12 +308,12 @@ function getLocation() {
       fetchWeather(gpsLat, gpsLon);
       requestCompass();
 
-      // 成功時呼叫 AI 判斷
+      // 成功時呼叫 AI 判斷 (null 代表無錯誤)
       runAiDiagnosis(p, null);
     },
     (err) => {
       display.innerHTML = '<span style="color:red">定位失敗</span>';
-      // 失敗時呼叫 AI 判斷，傳入錯誤代碼
+      // 失敗時呼叫 AI 判斷 (傳入錯誤物件)
       runAiDiagnosis(null, err);
     },
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
