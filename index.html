@@ -3,12 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>全能定位轉換助手 V30 Final @yuushiemm</title>
+<meta name="author" content="yuushiemm">
+<meta name="copyright" content="Copyright © 2026 yuushiemm. All rights reserved.">
+<meta name="description" content="全能定位轉換助手 - 僅供個人使用，未經授權禁止轉載或商業用途。">
+<title>全能定位轉換助手 V31 Copyright @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
-  /* === V17 基底樣式 (完全保留) === */
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 0; background: #f4f6f8; color: #333; margin: 0; padding-bottom: 60px; }
+  /* === V17 基底樣式 === */
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 0; background: #f4f6f8; color: #333; margin: 0; padding-bottom: 80px; /* 增加底部空間給版權宣告 */ }
   .container { max-width: 600px; margin: 0 auto; }
   h2 { text-align: center; font-size: 1.2rem; color: #555; margin: 15px 0; letter-spacing: 1px; }
   
@@ -20,7 +23,7 @@
   .page-section.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* === 按鈕 1：瀏覽器 (AI 控制閃爍) === */
+  /* === 按鈕 1：瀏覽器 === */
   .top-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .browser-btn { 
     flex: 1; background: #78909c; color: white; border: none; 
@@ -32,19 +35,18 @@
   .browser-btn.urgent { background: #ff5722; border-color: #ffccbc; animation: pulse-btn 0.8s infinite; }
   @keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
 
-  /* V30: 羅盤區域樣式 (含校正鈕) */
+  /* === 羅盤區域 === */
   .compass-wrapper { position: relative; text-align: center; }
   .compass-container { 
     width: 50px; height: 50px; flex-shrink: 0; background: white; border-radius: 50%; 
     display: flex; justify-content: center; align-items: center; 
     border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
-    /* V30: 移除點擊互動，避免誤觸 */
     pointer-events: none; 
   }
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.2s ease-out; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 32px; left: -4px; color: #555; font-size: 10px; font-weight: bold; }
   
-  /* 校正按鈕 (小齒輪) */
+  /* 校正按鈕 */
   .calib-btn {
     position: absolute; bottom: -5px; right: -5px;
     background: #607d8b; color: white; font-size: 12px; width: 24px; height: 24px;
@@ -52,7 +54,7 @@
     cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;
   }
 
-  /* === 按鈕 2：分享 (置頂) === */
+  /* === 按鈕 2：分享 === */
   .primary-action-area { margin-bottom: 15px; }
   .btn-step2 { 
     width: 100%; padding: 18px; border: none; border-radius: 12px; 
@@ -71,7 +73,7 @@
   #permGuide { display: none; background: #ffebee; border: 2px solid red; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
   .perm-btn { background: #d32f2f; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; display: inline-block; margin-top: 10px; font-weight: bold; }
 
-  /* 儀表板與其他樣式 */
+  /* 儀表板 */
   .dashboard { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); margin-bottom: 20px; }
   #map { height: 220px; width: 100%; border-radius: 12px; margin-top: 10px; border: 2px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; }
   
@@ -90,7 +92,7 @@
   .info-item { background: rgba(255,255,255,0.15); padding: 10px 5px; border-radius: 8px; backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; }
   .info-value { font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
 
-  /* 轉換頁面樣式 (100% V17) */
+  /* 轉換頁面樣式 */
   .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
   .card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: wrap; }
   .card-tag { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 4px; color: #666; font-weight: normal; margin-left: auto; }
@@ -115,6 +117,16 @@
   
   /* 校正提示 */
   #calibToast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 12px 24px; border-radius: 50px; font-size: 15px; z-index: 2000; display: none; pointer-events: none; white-space: nowrap; }
+
+  /* V31: 底部版權宣告樣式 */
+  .footer-copyright {
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+    padding: 20px 0;
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+  }
 </style>
 </head>
 <body>
@@ -235,34 +247,45 @@
   
   <div id="calibToast">羅盤模式：標準</div>
 
+  <div class="footer-copyright">
+    © 2026 yuushiemm. All Rights Reserved.<br>
+    僅供個人救難輔助使用，未經許可禁止轉載。
+  </div>
+
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
 <script>
-// === 保留 V17 核心變數 ===
+/**
+ * 全能定位轉換助手 V31
+ * Copyright (c) 2026 yuushiemm
+ * All rights reserved.
+ * * 未經作者許可，禁止將本程式碼用於商業用途或公開轉載。
+ */
+
+// === V17 核心變數 ===
 let gpsLat = 0, gpsLon = 0;   
 let formLat = 0, formLon = 0; 
 let map, marker;
 let isMapLocked = true; // 預設鎖定
 let globalInfo = { acc: "精度 : --", alt: "海拔 : --", weather: "天氣 : --", wind: "風速 : --" };
 let watchId = null;
-let compassOffset = 0; // V30: 羅盤校正值
+let compassOffset = 0; // 羅盤校正值
 
 window.onload = function() {
   initMap();
   startSmartLocate(); 
 };
 
-// === V30: 羅盤校正邏輯 ===
+// === V30: 羅盤校正 ===
 function requestCompass() {
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission().then(r => {
       if (r === 'granted') window.addEventListener('deviceorientation', handleOrientation);
     });
   } else {
-    // Android 優先使用 absolute，否則 fallback
     if ('ondeviceorientationabsolute' in window) {
       window.addEventListener('deviceorientationabsolute', handleOrientation);
     } else {
@@ -271,15 +294,14 @@ function requestCompass() {
   }
 }
 
-// V30: 切換校正模式 (僅點擊小齒輪觸發)
 function toggleCompassOffset() {
   const toast = document.getElementById('calibToast');
-  compassOffset = (compassOffset + 90) % 360; // 0 -> 90 -> 180 -> 270 -> 0
+  compassOffset = (compassOffset + 90) % 360;
   
   let msg = "羅盤模式：標準";
   if (compassOffset === 90) msg = "羅盤校正：+90° (Sony)";
   else if (compassOffset === 180) msg = "羅盤校正：+180°";
-  else if (compassOffset === 270) msg = "羅盤校正：-90° (Landscape)";
+  else if (compassOffset === 270) msg = "羅盤校正：-90°";
   
   toast.innerText = msg;
   toast.style.display = 'block';
@@ -290,13 +312,9 @@ function handleOrientation(e) {
   let heading = null;
   const arrow = document.getElementById('compassArrow');
   
-  // iOS
   if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
     heading = e.webkitCompassHeading;
-  } 
-  // Android Absolute
-  else if (e.absolute === true && e.alpha !== null) {
-    // 自動扣除螢幕旋轉
+  } else if (e.absolute === true && e.alpha !== null) {
     let screenAngle = 0;
     if (window.screen.orientation && window.screen.orientation.angle) {
       screenAngle = window.screen.orientation.angle;
@@ -307,13 +325,12 @@ function handleOrientation(e) {
   }
   
   if (heading !== null) {
-    // 套用手動校正值
     let finalHeading = (heading + compassOffset + 360) % 360;
     arrow.style.transform = `rotate(${-finalHeading}deg)`;
   }
 }
 
-// === V26: 智慧連續定位 (自動重試) ===
+// === V26: 智慧連續定位 ===
 function startSmartLocate() {
   const display = document.getElementById('gpsDisplayVal');
   const aiBox = document.getElementById('aiHintBox');
@@ -328,7 +345,6 @@ function startSmartLocate() {
   aiBox.innerHTML = "📡 <b>AI 正在連線衛星並修正飄移...</b>";
   aiBox.style.background = "#fff3e0"; aiBox.style.borderColor = "#ff9800"; aiBox.style.color = "#333";
 
-  // Watch Mode
   watchId = navigator.geolocation.watchPosition(
     (position) => { handlePositionSuccess(position); },
     (err) => { handlePositionError(err); },
@@ -360,11 +376,10 @@ function handlePositionError(err) {
   const display = document.getElementById('gpsDisplayVal');
   const aiBox = document.getElementById('aiHintBox');
 
-  // V26: Timeout 自動重試
-  if (err.code === 3) { 
+  if (err.code === 3) { // TIMEOUT
     display.innerHTML = '<span style="color:#e65100">連線逾時...</span>';
     aiBox.innerHTML = `⚠️ <b>連線逾時，AI 正在自動重試...</b><br>請保持在戶外空曠處`;
-    setTimeout(() => { startSmartLocate(); }, 1000); // 1秒後重試
+    setTimeout(() => { startSmartLocate(); }, 1000);
     return;
   }
   
@@ -372,7 +387,7 @@ function handlePositionError(err) {
   runAiDiagnosis(null, err);
 }
 
-// === V25 修正版診斷邏輯 ===
+// === V25 診斷邏輯 ===
 async function runAiDiagnosis(p, error) {
   const aiBox = document.getElementById('aiHintBox');
   const browserBtn = document.getElementById('browserBtn');
@@ -382,13 +397,11 @@ async function runAiDiagnosis(p, error) {
 
   if (error) {
     if (isLine) {
-      // LINE 內失敗 -> 強制引導，不顯示教學
       aiBox.innerHTML = `⚠️ <b>LINE 無法開啟定位</b><br>👇 <b>請直接按【用預設瀏覽器開啟】</b><br><small>跳轉後請務必點選<b>「允許」</b>定位！</small>`;
       aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
       browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
       document.getElementById('dashboard').style.opacity = '0.5';
     } else {
-      // 外部瀏覽器失敗 -> 顯示權限教學
       if (error.code === 1) { 
         permGuide.style.display = 'block'; aiBox.style.display = 'none'; document.getElementById('dashboard').style.opacity = '0.5';
       } else {
@@ -399,23 +412,19 @@ async function runAiDiagnosis(p, error) {
     return;
   }
 
-  // 成功 -> 恢復介面
   permGuide.style.display = 'none'; aiBox.style.display = 'block'; document.getElementById('dashboard').style.opacity = '1';
   const acc = Math.round(p.accuracy);
   browserBtn.classList.remove('urgent'); shareBtn.classList.remove('dimmed');
 
-  // 精度判定 (25m 為界線)
   if (acc <= 25) {
     aiBox.innerHTML = `✅ 訊號已穩定 (±${acc}m)<br><span style="font-size:24px">👆</span> <b>請直接按上方【分享到 LINE】</b>`;
     aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32";
   } else {
     if (isLine) {
-      // LINE 內且精度差 -> 引導
       aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議改按【用預設瀏覽器開啟】</b><br><small>跳轉後請務必點選<b>「允許」</b>定位！</small>`;
       aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
       browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
     } else {
-      // 外部瀏覽器精度差 -> 飄移修正
       let advice = "AI 正在修正飄移...";
       if (window.ai) { try { const s = await window.ai.createTextSession(); advice = await s.prompt("GPS誤差"+acc+"米，安撫長輩說AI正在修正訊號，請稍等或先分享。10字內。"); } catch(e){} }
       aiBox.innerHTML = `📡 訊號鎖定中... (±${acc}m)<br>${advice}<br>或者 <span style="font-size:20px">👆</span> <b>先按上方【分享】</b>`;
