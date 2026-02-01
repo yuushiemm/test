@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>全能定位轉換助手 V23 AI-Logic @yuushiemm</title>
+<title>全能定位轉換助手 V24 Logic-Fix @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
@@ -20,7 +20,7 @@
   .page-section.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* === 按鈕 1：瀏覽器開啟 (V23: LINE 環境下會變色閃爍) === */
+  /* === 按鈕 1：瀏覽器 (AI 控制樣式) === */
   .top-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .browser-btn { 
     flex: 1; background: #78909c; color: white; border: none; 
@@ -29,15 +29,14 @@
     display: flex; align-items: center; justify-content: center; gap: 5px; text-align: left; 
     transition: all 0.3s; border: 2px solid transparent;
   }
-  /* 當 AI 判定需要強制切換瀏覽器時的樣式 */
   .browser-btn.urgent { background: #ff5722; border-color: #ffccbc; animation: pulse-btn 1s infinite; }
-  @keyframes pulse-btn { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7); } 70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(255, 87, 34, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 87, 34, 0); } }
+  @keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
   .compass-container { width: 50px; height: 50px; flex-shrink: 0; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #ddd; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.2s ease-out; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 32px; left: -4px; color: #555; font-size: 10px; font-weight: bold; }
 
-  /* === 按鈕 2：分享 (V23: LINE 環境下會變暗，引導使用者去按上面的) === */
+  /* === 按鈕 2：分享 (置頂) === */
   .primary-action-area { margin-bottom: 15px; }
   .btn-step2 { 
     width: 100%; padding: 18px; border: none; border-radius: 12px; 
@@ -47,16 +46,16 @@
     display: flex; align-items: center; justify-content: center; 
     border: 3px solid white; transition: all 0.3s;
   }
-  .btn-step2.dimmed { opacity: 0.5; background-color: #888; box-shadow: none; } /* LINE 環境下變暗 */
+  .btn-step2.dimmed { opacity: 0.5; background-color: #888; box-shadow: none; }
 
   /* === AI 診斷框 === */
   #aiHintBox { display: block; margin-bottom: 15px; padding: 15px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 18px; line-height: 1.5; border: 2px solid #ddd; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-  /* 權限教學覆蓋層 (V23 新增) */
+  /* 權限教學覆蓋層 */
   #permGuide { display: none; background: #ffebee; border: 2px solid red; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
   .perm-btn { background: #d32f2f; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; display: inline-block; margin-top: 10px; font-weight: bold; }
 
-  /* 儀表板與其他 V17 樣式 */
+  /* 儀表板與其他樣式 */
   .dashboard { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); margin-bottom: 20px; }
   #map { height: 220px; width: 100%; border-radius: 12px; margin-top: 10px; border: 2px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; }
   .map-lock-btn { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; z-index: 1000; }
@@ -221,7 +220,7 @@ window.onload = function() {
   getLocation(); 
 };
 
-// === V23 搜救 AI 邏輯核心 ===
+// === V24 AI 最終邏輯：精度優先，權限防呆 ===
 async function runAiDiagnosis(p, error) {
   const aiBox = document.getElementById('aiHintBox');
   const browserBtn = document.getElementById('browserBtn');
@@ -249,27 +248,27 @@ async function runAiDiagnosis(p, error) {
   const acc = Math.round(p.accuracy);
   const isLine = /Line/i.test(navigator.userAgent);
 
-  // 2. LINE 環境判斷 (次優先)
-  // 邏輯：在 LINE 裡，精度通常很差。不引導分享，而是強制引導「切換瀏覽器」。
-  if (isLine) {
-    aiBox.innerHTML = `⚠️ <b>LINE 內無法精確定位</b><br><span style="font-size:24px">👆</span> <b>請務必先按最上方【用預設瀏覽器開啟】</b><br>開啟後定位才會準確！`;
-    aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
-    
-    browserBtn.classList.add('urgent'); // 讓瀏覽器按鈕瘋狂閃爍
-    shareBtn.classList.add('dimmed');   // 讓分享按鈕變暗，降低點擊慾望
-    return;
-  }
-
-  // 3. 外部瀏覽器環境 (正常流程)
+  // 重置按鈕狀態
   browserBtn.classList.remove('urgent');
   shareBtn.classList.remove('dimmed');
 
-  if (acc <= 40) {
-    // 精度良好 -> 綠燈，手指向上引導分享
-    aiBox.innerHTML = `✅ 定位良好 (±${acc}m)<br><span style="font-size:24px">👆</span> <b>請直接按上方【分享到 LINE】</b>`;
+  // 2. 精度判定：只要精度好，就是綠燈 (不管是不是 LINE)
+  if (acc <= 30) {
+    aiBox.innerHTML = `✅ 定位精準 (±${acc}m)<br><span style="font-size:24px">👆</span> <b>請直接按上方【分享到 LINE】</b>`;
     aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32";
+    return; 
+  }
+
+  // 3. 精度差 (> 30m)：開始區分環境
+  if (isLine) {
+    // 精度差 + LINE -> 兇手可能是 LINE 瀏覽器
+    aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議改按【用預設瀏覽器開啟】</b><br><small>跳轉後請務必點選<b>「允許」</b>定位！</small>`;
+    aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
+    
+    browserBtn.classList.add('urgent'); // 瀏覽器按鈕閃爍
+    shareBtn.classList.add('dimmed');   // 分享按鈕變暗
   } else {
-    // 精度不佳 (但已經在外部瀏覽器) -> 依照 V22 邏輯：先分享再移動
+    // 精度差 + 外部瀏覽器 -> 真的訊號不好，引導移動
     let advice = "請先分享座標";
     if (window.ai) {
        try { const s = await window.ai.createTextSession(); advice = await s.prompt("GPS誤差"+acc+"米，引導長輩先分享再試著移動。10字內。"); } catch(e){}
