@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="author" content="yuushiemm">
 <meta name="copyright" content="Copyright © 2026 yuushiemm. All rights reserved.">
-<title>全能定位轉換助手 V34 Stable-Compass @yuushiemm</title>
+<title>全能定位轉換助手 V35 Final-AutoFix @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
@@ -34,24 +34,20 @@
   .browser-btn.urgent { background: #ff5722; border-color: #ffccbc; animation: pulse-btn 0.8s infinite; }
   @keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
 
-  /* 羅盤區域 */
+  /* 羅盤區域 (無小齒輪) */
   .compass-wrapper { position: relative; text-align: center; }
   .compass-container { 
     width: 50px; height: 50px; flex-shrink: 0; background: white; border-radius: 50%; 
     display: flex; justify-content: center; align-items: center; 
     border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
-    cursor: pointer; /* iOS需要點擊 */
+    cursor: pointer; /* 提示可點擊 (針對 iOS) */
   }
-  .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.1s linear; /* 平滑過渡 */ }
+  .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.1s linear; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 32px; left: -4px; color: #555; font-size: 10px; font-weight: bold; }
   
-  /* 校正按鈕 (小齒輪) */
-  .calib-btn {
-    position: absolute; bottom: -5px; right: -5px;
-    background: #607d8b; color: white; font-size: 12px; width: 24px; height: 24px;
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 10;
-  }
+  /* 點擊提示字 (僅 iOS 顯示) */
+  .compass-hint { position: absolute; bottom: -20px; width: 100%; text-align: center; font-size: 10px; color: #888; display: none; }
+  .ios-mode .compass-hint { display: block; }
 
   /* === 按鈕 2：分享 === */
   .primary-action-area { margin-bottom: 15px; }
@@ -72,7 +68,7 @@
   #permGuide { display: none; background: #ffebee; border: 2px solid red; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
   .perm-btn { background: #d32f2f; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; display: inline-block; margin-top: 10px; font-weight: bold; }
 
-  /* 儀表板與其他樣式 */
+  /* 儀表板 */
   .dashboard { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); margin-bottom: 20px; }
   #map { height: 220px; width: 100%; border-radius: 12px; margin-top: 10px; border: 2px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; }
   
@@ -91,7 +87,7 @@
   .info-item { background: rgba(255,255,255,0.15); padding: 10px 5px; border-radius: 8px; backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; }
   .info-value { font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
 
-  /* 轉換頁面樣式 */
+  /* 轉換頁 */
   .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
   .card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: wrap; }
   .card-tag { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 4px; color: #666; font-weight: normal; margin-left: auto; }
@@ -113,9 +109,6 @@
   .btn-share-gpx { background-color: #FF9800; }
   .btn-line-text { background-color: #06C755; grid-column: 1 / -1; font-size: 18px; }
   .status-bar { text-align: center; color: #666; margin: 15px 0; font-size: 16px; font-weight: bold; }
-  
-  /* 校正提示 */
-  #calibToast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 12px 24px; border-radius: 50px; font-size: 15px; z-index: 2000; display: none; pointer-events: none; white-space: nowrap; }
 
   .footer-copyright { text-align: center; font-size: 12px; color: #999; padding: 20px 0; margin-top: 20px; border-top: 1px solid #eee; }
 </style>
@@ -136,11 +129,11 @@
         1、🌐 用預設瀏覽器開啟
       </button>
       
-      <div class="compass-wrapper">
+      <div class="compass-wrapper" id="compassWrapper">
         <div class="compass-container" onclick="requestPermissionIOS()">
           <div class="compass-arrow" id="compassArrow"></div>
         </div>
-        <div class="calib-btn" onclick="toggleCompassOffset(event)">⚙️</div>
+        <div class="compass-hint">點擊啟用羅盤</div>
       </div>
     </div>
 
@@ -236,8 +229,6 @@
     </div>
   </div>
   
-  <div id="calibToast">羅盤模式：標準</div>
-
   <div class="footer-copyright">
     © 2026 yuushiemm. All Rights Reserved.<br>
     僅供個人救難輔助使用，未經許可禁止轉載。
@@ -250,48 +241,49 @@
 
 <script>
 /**
- * 全能定位轉換助手 V34
+ * 全能定位轉換助手 V35
  * Copyright (c) 2026 yuushiemm
  * All rights reserved.
  */
 
-// === 變數初始化 ===
 let gpsLat = 0, gpsLon = 0;   
 let formLat = 0, formLon = 0; 
 let map, marker;
 let isMapLocked = true; 
 let globalInfo = { acc: "精度 : --", alt: "海拔 : --", weather: "天氣 : --", wind: "風速 : --" };
 let watchId = null;
-let compassOffset = 0; 
-let currentHeading = 0; // 當前角度 (用於平滑)
-let targetHeading = 0;  // 目標角度
+let currentHeading = 0; // 用於平滑
+let targetHeading = 0;
 
-const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+// 裝置偵測
+const isAndroid = /Android/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isDesktop = !isAndroid && !isIOS;
+
+// V35 核心：如果是 Android，自動套用 +90 度修正
+let compassOffset = isAndroid ? 90 : 0; 
 
 window.onload = function() {
   initMap();
   startSmartLocate(); 
   
   if (isDesktop) document.getElementById('browserBtn').style.display = 'none';
+  if (isIOS) document.getElementById('compassWrapper').classList.add('ios-mode');
   
-  // 啟動羅盤與動畫循環
-  initCompass();
+  // 自動啟動羅盤
+  if (!isIOS) initCompass();
   requestAnimationFrame(animateCompass);
 };
 
-// === V34 羅盤核心 (回歸 V17 邏輯 + requestAnimationFrame 防抖) ===
+// === V34+V35 羅盤核心 (穩定平滑 + Android 自動修正) ===
 
-// 1. 初始化監聽 (完全照 V17，只增加 iOS 權限檢查)
 function initCompass() {
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS: 等待點擊觸發 (不自動監聽)
-  } else {
-    // Android/PC: 直接監聽 deviceorientation (V17 做法)
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+    // Android/PC: 直接監聽 (使用穩定事件，非 absolute)
     window.addEventListener('deviceorientation', handleOrientation);
   }
 }
 
-// 2. iOS 點擊觸發
 function requestPermissionIOS() {
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission().then(r => {
@@ -303,7 +295,6 @@ function requestPermissionIOS() {
   }
 }
 
-// 3. 處理事件 (純 V17 邏輯，不使用 absolute)
 function handleOrientation(e) {
   let h = null;
   
@@ -311,25 +302,24 @@ function handleOrientation(e) {
   if (e.webkitCompassHeading) {
     h = e.webkitCompassHeading;
   } 
-  // Android (V17 邏輯: 360 - alpha)
+  // Android (V17 邏輯)
   else if (e.alpha !== null) {
     h = 360 - e.alpha; 
   }
   
   if (h !== null) {
+    // 這裡會自動加上 compassOffset (Android 為 90, 其他為 0)
     targetHeading = (h + compassOffset + 360) % 360;
   }
 }
 
-// 4. 動畫平滑更新 (防抖關鍵)
+// 平滑動畫
 function animateCompass() {
-  // 簡單的線性插值 (Lerp) 讓指針平滑轉動
-  // 解決 0/360 邊界問題
   let diff = targetHeading - currentHeading;
   while (diff < -180) diff += 360;
   while (diff > 180) diff -= 360;
   
-  // 0.1 是平滑係數，越小越平滑但反應越慢
+  // 平滑係數 0.1
   if (Math.abs(diff) > 0.5) {
     currentHeading += diff * 0.1;
   } else {
@@ -340,24 +330,7 @@ function animateCompass() {
   if (arrow) {
     arrow.style.transform = `rotate(${-currentHeading}deg)`;
   }
-  
   requestAnimationFrame(animateCompass);
-}
-
-// 5. 小齒輪校正
-function toggleCompassOffset(e) {
-  e.stopPropagation(); 
-  const toast = document.getElementById('calibToast');
-  compassOffset = (compassOffset + 90) % 360;
-  
-  let msg = "羅盤模式：標準";
-  if (compassOffset === 90) msg = "羅盤校正：+90° (Sony)";
-  else if (compassOffset === 180) msg = "羅盤校正：+180°";
-  else if (compassOffset === 270) msg = "羅盤校正：-90°";
-  
-  toast.innerText = msg;
-  toast.style.display = 'block';
-  setTimeout(() => { toast.style.display = 'none'; }, 2000);
 }
 
 // === 定位邏輯 ===
