@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="author" content="yuushiemm">
 <meta name="copyright" content="Copyright © 2026 yuushiemm. All rights reserved.">
-<title>全能定位轉換助手 V36 UI-Fix @yuushiemm</title>
+<title>全能定位轉換助手 @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
@@ -22,8 +22,10 @@
   .page-section.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* === 按鈕 1：瀏覽器 === */
+  /* === 頂部控制區 === */
   .top-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  
+  /* 瀏覽器按鈕 */
   .browser-btn { 
     flex: 1; background: #78909c; color: white; border: none; 
     padding: 12px; border-radius: 50px; font-weight: bold; font-size: 15px; 
@@ -33,6 +35,15 @@
   }
   .browser-btn.urgent { background: #ff5722; border-color: #ffccbc; animation: pulse-btn 0.8s infinite; }
   @keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+  /* V38: 螢幕恆亮按鈕 (Wake Lock) */
+  .wake-btn {
+    flex: 1; background: #546e7a; color: white; border: none;
+    padding: 12px; border-radius: 50px; font-weight: bold; font-size: 15px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .wake-btn.active { background: #ffca28; color: #333; box-shadow: 0 0 10px #ffca28; }
 
   /* 羅盤區域 */
   .compass-wrapper { position: relative; text-align: center; }
@@ -44,12 +55,10 @@
   }
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.1s linear; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 32px; left: -4px; color: #555; font-size: 10px; font-weight: bold; }
-  
-  /* 點擊提示字 (僅 iOS 顯示) */
   .compass-hint { position: absolute; bottom: -20px; width: 100%; text-align: center; font-size: 10px; color: #888; display: none; }
   .ios-mode .compass-hint { display: block; }
 
-  /* === 按鈕 2：分享 === */
+  /* === 分享按鈕 === */
   .primary-action-area { margin-bottom: 15px; }
   .btn-step2 { 
     width: 100%; padding: 18px; border: none; border-radius: 12px; 
@@ -64,60 +73,31 @@
   /* === AI 診斷框 === */
   #aiHintBox { display: block; margin-bottom: 15px; padding: 15px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 18px; line-height: 1.5; border: 2px solid #ddd; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: background-color 0.5s; }
 
-  /* 權限教學覆蓋層 */
+  /* 權限教學 */
   #permGuide { display: none; background: #ffebee; border: 2px solid red; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
   .perm-btn { background: #d32f2f; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; display: inline-block; margin-top: 10px; font-weight: bold; }
 
-  /* 儀表板與其他樣式 */
+  /* 儀表板 */
   .dashboard { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); margin-bottom: 20px; }
   #map { height: 220px; width: 100%; border-radius: 12px; margin-top: 10px; border: 2px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; }
-  
-  .map-lock-btn { 
-    position: absolute; bottom: 10px; right: 10px; 
-    background: rgba(0,0,0,0.6); color: white; 
-    padding: 8px 12px; border-radius: 6px; 
-    font-size: 14px; cursor: pointer; z-index: 1000; 
-    font-weight: bold; border: 1px solid rgba(255,255,255,0.5);
-  }
+  .map-lock-btn { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 8px 12px; border-radius: 6px; font-size: 14px; cursor: pointer; z-index: 1000; font-weight: bold; border: 1px solid rgba(255,255,255,0.5); }
 
   .gps-full-display { width: 100%; text-align: center; margin-top: 10px; }
-  .gps-coords-box { background: rgba(0,0,0,0.25); border-radius: 12px; padding: 10px; width: 100%; box-sizing: border-box; display: flex; justify-content: center; align-items: center; min-height: 50px; }
+  .gps-coords-box { background: rgba(0,0,0,0.25); border-radius: 12px; padding: 10px; width: 100%; box-sizing: border-box; display: flex; justify-content: center; align-items: center; min-height: 50px; flex-direction: column; }
   .gps-coords { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; font-size: 20px; font-weight: bold; font-family: monospace; width: 100%; }
   
-  /* V36: Grid 佈局優化 */
-  .info-grid { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 8px; /* 縮小間距，給格子更多空間 */
-    margin-top: 15px; 
-    text-align: left; 
+  /* V38: 日落警示區 */
+  #sunsetAlert {
+    margin-top: 8px; font-size: 14px; font-weight: bold; 
+    padding: 4px 10px; border-radius: 20px;
+    background: rgba(255,255,255,0.2); 
+    display: none; /* 預設隱藏，算出來再顯示 */
   }
-  
-  /* V36: 彈性高度與內邊距修正 */
-  .info-item { 
-    background: rgba(255,255,255,0.15); 
-    padding: 8px 4px; /* 縮小左右 padding */
-    border-radius: 8px; 
-    backdrop-filter: blur(5px); 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    min-height: 45px; /* 設定最小高度 */
-  }
-  
-  /* V36: 文字自動換行與字體調整 */
-  .info-value { 
-    font-size: 15px; /* 稍微縮小基礎字體 */
-    font-weight: bold; 
-    width: 100%; 
-    text-align: center; 
-    
-    /* 關鍵：允許換行 */
-    white-space: normal; 
-    overflow: visible; 
-    word-break: break-word; /* 長字串自動換行 */
-    line-height: 1.2;
-  }
+
+  /* V36: Grid */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; text-align: left; }
+  .info-item { background: rgba(255,255,255,0.15); padding: 8px 4px; border-radius: 8px; backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; min-height: 45px; }
+  .info-value { font-size: 15px; font-weight: bold; width: 100%; text-align: center; white-space: normal; overflow: visible; word-break: break-word; line-height: 1.2; }
 
   /* 轉換頁 */
   .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
@@ -158,7 +138,11 @@
     
     <div class="top-controls">
       <button id="browserBtn" class="browser-btn" onclick="openInBrowser()">
-        1、🌐 用預設瀏覽器開啟
+        1、🌐 瀏覽器開啟
+      </button>
+      
+      <button id="wakeLockBtn" class="wake-btn" onclick="toggleWakeLock()">
+        💡 保持螢幕開啟
       </button>
       
       <div class="compass-wrapper" id="compassWrapper">
@@ -192,6 +176,7 @@
       <div class="gps-full-display">
         <div class="gps-coords-box">
           <div class="gps-coords" id="gpsDisplayVal">定位中...</div>
+          <div id="sunsetAlert">☀️ 計算日落時間中...</div>
         </div>
       </div>
       <div class="info-grid">
@@ -212,7 +197,7 @@
   </div>
 
   <div id="page-convert" class="page-section">
-    <h2>全能定位轉換助手 V17 @yuushiemm</h2>
+    <h2>全能定位轉換助手 @yuushiemm</h2>
     <div class="status-bar">輸入任一格式後按轉換成功方可分享</div>
 
     <div class="card">
@@ -273,7 +258,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V36
+ * 全能定位轉換助手 V38
  * Copyright (c) 2026 yuushiemm
  * All rights reserved.
  */
@@ -284,15 +269,14 @@ let map, marker;
 let isMapLocked = true; 
 let globalInfo = { acc: "精度 : --", alt: "海拔 : --", weather: "天氣 : --", wind: "風速 : --" };
 let watchId = null;
-let currentHeading = 0; // 用於平滑
+let currentHeading = 0; 
 let targetHeading = 0;
+let wakeLock = null; // V38: Wake Lock 變數
 
-// 裝置偵測
 const isAndroid = /Android/i.test(navigator.userAgent);
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isDesktop = !isAndroid && !isIOS;
 
-// V35 核心：如果是 Android，自動套用 +90 度修正
 let compassOffset = isAndroid ? 90 : 0; 
 
 window.onload = function() {
@@ -302,16 +286,146 @@ window.onload = function() {
   if (isDesktop) document.getElementById('browserBtn').style.display = 'none';
   if (isIOS) document.getElementById('compassWrapper').classList.add('ios-mode');
   
-  // 自動啟動羅盤
   if (!isIOS) initCompass();
   requestAnimationFrame(animateCompass);
 };
 
-// === V34+V35 羅盤核心 ===
+// === V38: 螢幕恆亮 (Wake Lock) ===
+async function toggleWakeLock() {
+  const btn = document.getElementById('wakeLockBtn');
+  
+  if (!('wakeLock' in navigator)) {
+    return alert('您的瀏覽器不支援螢幕恆亮功能');
+  }
 
+  if (wakeLock) {
+    // 關閉
+    try {
+      await wakeLock.release();
+      wakeLock = null;
+      btn.classList.remove('active');
+      btn.innerHTML = "💡 保持螢幕開啟";
+    } catch (err) { console.error(err); }
+  } else {
+    // 開啟
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      btn.classList.add('active');
+      btn.innerHTML = "💡 螢幕已恆亮 (耗電)";
+      
+      // 監聽釋放事件 (例如切換視窗會自動斷開)
+      wakeLock.addEventListener('release', () => {
+        if(wakeLock === null) { // 只有非手動關閉才重設 UI
+           // console.log('Wake Lock released by system'); 
+        }
+      });
+    } catch (err) {
+      alert('無法啟用螢幕恆亮: ' + err.name);
+    }
+  }
+}
+
+// === V38: 離線日落計算 (簡易版天文演算法) ===
+function updateSunsetInfo(lat, lon) {
+  const date = new Date();
+  
+  // 簡易日落計算 (NOAA 簡化公式)
+  // 輸入: Date object, lat, lon. 輸出: Date object (Sunset)
+  function getSunset(date, lat, lng) {
+    const zenith = 90.83333333333333;
+    const D2R = Math.PI / 180;
+    const R2D = 180 / Math.PI;
+    
+    // Day of year
+    const start = new Date(date.getFullYear(), 0, 0);
+    const diff = date - start;
+    const N = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    // Convert the longitude to hour value and calculate an approximate time
+    const lngHour = lng / 15;
+    const t = N + ((18 - lngHour) / 24);
+    
+    // Sun's mean anomaly
+    const M = (0.9856 * t) - 3.289;
+    
+    // Sun's true longitude
+    let L = M + (1.916 * Math.sin(M * D2R)) + (0.020 * Math.sin(2 * M * D2R)) + 282.634;
+    if (L > 360) L -= 360; else if (L < 0) L += 360;
+    
+    // Sun's Right Ascension
+    let RA = R2D * Math.atan(0.91764 * Math.tan(L * D2R));
+    if (RA > 360) RA -= 360; else if (RA < 0) RA += 360;
+    
+    // RA needs to be in the same quadrant as L
+    const Lquadrant = (Math.floor(L / 90)) * 90;
+    const RAquadrant = (Math.floor(RA / 90)) * 90;
+    RA = RA + (Lquadrant - RAquadrant);
+    RA = RA / 15;
+    
+    // Sun's declination
+    const sinDec = 0.39782 * Math.sin(L * D2R);
+    const cosDec = Math.cos(Math.asin(sinDec));
+    
+    // Sun's local hour angle
+    const cosH = (Math.cos(zenith * D2R) - (sinDec * Math.sin(lat * D2R))) / (cosDec * Math.cos(lat * D2R));
+    if (cosH > 1) return null; // Sun never sets (Polar)
+    
+    const H = (360 - R2D * Math.acos(cosH)) / 15;
+    
+    // Local mean time of setting
+    const T = H + RA - (0.06571 * t) - 6.622;
+    
+    // Adjust back to UTC
+    let UT = T - lngHour;
+    if (UT > 24) UT -= 24; else if (UT < 0) UT += 24;
+    
+    // Convert to Local Time
+    const sunsetDate = new Date(date);
+    sunsetDate.setUTCHours(Math.floor(UT));
+    sunsetDate.setUTCMinutes(Math.floor((UT % 1) * 60));
+    return sunsetDate;
+  }
+
+  const sunset = getSunset(date, lat, lon);
+  const alertBox = document.getElementById('sunsetAlert');
+  
+  if (!sunset) {
+    alertBox.style.display = 'none';
+    return;
+  }
+
+  const now = new Date();
+  const diffMs = sunset - now;
+  const diffHrs = diffMs / (1000 * 60 * 60);
+  
+  const sunsetStr = sunset.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  
+  alertBox.style.display = 'block';
+  
+  if (diffHrs < 0) {
+    // 已日落
+    alertBox.innerHTML = `🌑 已日落 (${sunsetStr})`;
+    alertBox.style.background = "#37474f"; // 深灰
+    alertBox.style.color = "#cfd8dc";
+  } else if (diffHrs < 2) {
+    // 危險：2小時內
+    const diffMins = Math.floor(diffHrs * 60);
+    alertBox.innerHTML = `⚠️ <b>距離日落僅剩 ${diffMins} 分鐘</b> (${sunsetStr})`;
+    alertBox.style.background = "#ffccbc"; // 橘紅
+    alertBox.style.color = "#bf360c";
+    alertBox.style.border = "1px solid #ff5722";
+  } else {
+    // 安全
+    alertBox.innerHTML = `☀️ 今日日落：${sunsetStr}`;
+    alertBox.style.background = "rgba(255,255,255,0.2)";
+    alertBox.style.color = "white";
+    alertBox.style.border = "none";
+  }
+}
+
+// === 羅盤核心 ===
 function initCompass() {
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
-    // Android/PC: 直接監聽
     window.addEventListener('deviceorientation', handleOrientation);
   }
 }
@@ -329,37 +443,24 @@ function requestPermissionIOS() {
 
 function handleOrientation(e) {
   let h = null;
-  // iOS
   if (e.webkitCompassHeading) {
     h = e.webkitCompassHeading;
-  } 
-  // Android (V17 邏輯)
-  else if (e.alpha !== null) {
+  } else if (e.alpha !== null) {
     h = 360 - e.alpha; 
   }
-  
   if (h !== null) {
-    // 自動修正偏移
     targetHeading = (h + compassOffset + 360) % 360;
   }
 }
 
-// 平滑動畫
 function animateCompass() {
   let diff = targetHeading - currentHeading;
   while (diff < -180) diff += 360;
   while (diff > 180) diff -= 360;
-  
-  if (Math.abs(diff) > 0.5) {
-    currentHeading += diff * 0.1;
-  } else {
-    currentHeading = targetHeading;
-  }
-  
+  if (Math.abs(diff) > 0.5) currentHeading += diff * 0.1;
+  else currentHeading = targetHeading;
   const arrow = document.getElementById('compassArrow');
-  if (arrow) {
-    arrow.style.transform = `rotate(${-currentHeading}deg)`;
-  }
+  if (arrow) arrow.style.transform = `rotate(${-currentHeading}deg)`;
   requestAnimationFrame(animateCompass);
 }
 
@@ -398,6 +499,10 @@ function handlePositionSuccess(position) {
 
   updateMap(gpsLat, gpsLon);
   fetchWeather(gpsLat, gpsLon);
+  
+  // V38: 更新日落資訊
+  updateSunsetInfo(gpsLat, gpsLon);
+  
   runAiDiagnosis(p, null);
 }
 
@@ -411,7 +516,6 @@ function handlePositionError(err) {
     setTimeout(() => { startSmartLocate(); }, 1000); 
     return;
   }
-  
   display.innerHTML = '<span style="color:red">定位失敗</span>';
   runAiDiagnosis(null, err);
 }
@@ -426,7 +530,7 @@ async function runAiDiagnosis(p, error) {
 
   if (error) {
     if (isLine) {
-      aiBox.innerHTML = `⚠️ <b>LINE 無法開啟定位</b><br>👇 <b>請直接按【用預設瀏覽器開啟】</b><br><small>跳轉後請務必點選<b>「允許」</b>定位！</small>`;
+      aiBox.innerHTML = `⚠️ <b>LINE 無法開啟定位</b><br>👇 <b>請直接按【瀏覽器開啟】</b><br><small>跳轉後請務必點選<b>「允許」</b>定位！</small>`;
       aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
       browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
       document.getElementById('dashboard').style.opacity = '0.5';
@@ -456,7 +560,7 @@ async function runAiDiagnosis(p, error) {
     aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32";
   } else {
     if (isLine) {
-      aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議改按【用預設瀏覽器開啟】</b><br><small>跳轉後請務必點選<b>「允許」</b>定位！</small>`;
+      aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議改按【瀏覽器開啟】</b><br><small>跳轉後請務必點選<b>「允許」</b>定位！</small>`;
       aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
       browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
     } else {
@@ -468,10 +572,8 @@ async function runAiDiagnosis(p, error) {
   }
 }
 
-// === V17 功能 ===
+// === 通用功能 ===
 function switchTab(t) { document.querySelectorAll('.tab-btn, .page-section').forEach(el => el.classList.remove('active')); if(t==='locate') { document.querySelector('.tab-btn:nth-child(1)').classList.add('active'); document.getElementById('page-locate').classList.add('active'); map.invalidateSize(); } else { document.querySelector('.tab-btn:nth-child(2)').classList.add('active'); document.getElementById('page-convert').classList.add('active'); } }
-function getWindDirection(d) { const dirs=['北','東北','東','東南','南','西南','西','西北']; return dirs[Math.round(d/45)%8]||""; }
-
 function initMap() { 
   map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false}).setView([23.6, 120.9], 7); 
   L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png').addTo(map); 
