@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="author" content="yuushiemm">
 <meta name="copyright" content="Copyright © 2026 yuushiemm. All rights reserved.">
-<title>全能定位轉換助手 V35 Final-AutoFix @yuushiemm</title>
+<title>全能定位轉換助手 V36 UI-Fix @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
@@ -34,13 +34,13 @@
   .browser-btn.urgent { background: #ff5722; border-color: #ffccbc; animation: pulse-btn 0.8s infinite; }
   @keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
 
-  /* 羅盤區域 (無小齒輪) */
+  /* 羅盤區域 */
   .compass-wrapper { position: relative; text-align: center; }
   .compass-container { 
     width: 50px; height: 50px; flex-shrink: 0; background: white; border-radius: 50%; 
     display: flex; justify-content: center; align-items: center; 
     border: 2px solid #ddd; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
-    cursor: pointer; /* 提示可點擊 (針對 iOS) */
+    cursor: pointer; 
   }
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.1s linear; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 32px; left: -4px; color: #555; font-size: 10px; font-weight: bold; }
@@ -68,7 +68,7 @@
   #permGuide { display: none; background: #ffebee; border: 2px solid red; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
   .perm-btn { background: #d32f2f; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; display: inline-block; margin-top: 10px; font-weight: bold; }
 
-  /* 儀表板 */
+  /* 儀表板與其他樣式 */
   .dashboard { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); margin-bottom: 20px; }
   #map { height: 220px; width: 100%; border-radius: 12px; margin-top: 10px; border: 2px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; }
   
@@ -83,9 +83,41 @@
   .gps-full-display { width: 100%; text-align: center; margin-top: 10px; }
   .gps-coords-box { background: rgba(0,0,0,0.25); border-radius: 12px; padding: 10px; width: 100%; box-sizing: border-box; display: flex; justify-content: center; align-items: center; min-height: 50px; }
   .gps-coords { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; font-size: 20px; font-weight: bold; font-family: monospace; width: 100%; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; text-align: left; }
-  .info-item { background: rgba(255,255,255,0.15); padding: 10px 5px; border-radius: 8px; backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; }
-  .info-value { font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
+  
+  /* V36: Grid 佈局優化 */
+  .info-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px; /* 縮小間距，給格子更多空間 */
+    margin-top: 15px; 
+    text-align: left; 
+  }
+  
+  /* V36: 彈性高度與內邊距修正 */
+  .info-item { 
+    background: rgba(255,255,255,0.15); 
+    padding: 8px 4px; /* 縮小左右 padding */
+    border-radius: 8px; 
+    backdrop-filter: blur(5px); 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    min-height: 45px; /* 設定最小高度 */
+  }
+  
+  /* V36: 文字自動換行與字體調整 */
+  .info-value { 
+    font-size: 15px; /* 稍微縮小基礎字體 */
+    font-weight: bold; 
+    width: 100%; 
+    text-align: center; 
+    
+    /* 關鍵：允許換行 */
+    white-space: normal; 
+    overflow: visible; 
+    word-break: break-word; /* 長字串自動換行 */
+    line-height: 1.2;
+  }
 
   /* 轉換頁 */
   .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
@@ -241,7 +273,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V35
+ * 全能定位轉換助手 V36
  * Copyright (c) 2026 yuushiemm
  * All rights reserved.
  */
@@ -275,11 +307,11 @@ window.onload = function() {
   requestAnimationFrame(animateCompass);
 };
 
-// === V34+V35 羅盤核心 (穩定平滑 + Android 自動修正) ===
+// === V34+V35 羅盤核心 ===
 
 function initCompass() {
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
-    // Android/PC: 直接監聽 (使用穩定事件，非 absolute)
+    // Android/PC: 直接監聽
     window.addEventListener('deviceorientation', handleOrientation);
   }
 }
@@ -297,7 +329,6 @@ function requestPermissionIOS() {
 
 function handleOrientation(e) {
   let h = null;
-  
   // iOS
   if (e.webkitCompassHeading) {
     h = e.webkitCompassHeading;
@@ -308,7 +339,7 @@ function handleOrientation(e) {
   }
   
   if (h !== null) {
-    // 這裡會自動加上 compassOffset (Android 為 90, 其他為 0)
+    // 自動修正偏移
     targetHeading = (h + compassOffset + 360) % 360;
   }
 }
@@ -319,7 +350,6 @@ function animateCompass() {
   while (diff < -180) diff += 360;
   while (diff > 180) diff -= 360;
   
-  // 平滑係數 0.1
   if (Math.abs(diff) > 0.5) {
     currentHeading += diff * 0.1;
   } else {
@@ -440,6 +470,8 @@ async function runAiDiagnosis(p, error) {
 
 // === V17 功能 ===
 function switchTab(t) { document.querySelectorAll('.tab-btn, .page-section').forEach(el => el.classList.remove('active')); if(t==='locate') { document.querySelector('.tab-btn:nth-child(1)').classList.add('active'); document.getElementById('page-locate').classList.add('active'); map.invalidateSize(); } else { document.querySelector('.tab-btn:nth-child(2)').classList.add('active'); document.getElementById('page-convert').classList.add('active'); } }
+function getWindDirection(d) { const dirs=['北','東北','東','東南','南','西南','西','西北']; return dirs[Math.round(d/45)%8]||""; }
+
 function initMap() { 
   map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false}).setView([23.6, 120.9], 7); 
   L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png').addTo(map); 
