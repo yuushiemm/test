@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>全能定位轉換助手 V28 Locked-Map @yuushiemm</title>
+<title>全能定位轉換助手 V29 Sony-Fix @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
@@ -32,7 +32,17 @@
   .browser-btn.urgent { background: #ff5722; border-color: #ffccbc; animation: pulse-btn 0.8s infinite; }
   @keyframes pulse-btn { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
 
-  .compass-container { width: 50px; height: 50px; flex-shrink: 0; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #ddd; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
+  /* V29: 羅盤增加點擊回饋樣式 */
+  .compass-container { 
+    width: 50px; height: 50px; flex-shrink: 0; background: white; border-radius: 50%; 
+    display: flex; justify-content: center; align-items: center; 
+    border: 2px solid #ddd; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.1); 
+    position: relative;
+  }
+  .compass-container:active { transform: scale(0.9); background: #f0f0f0; }
+  /* 羅盤下方提示字 */
+  .compass-label { position: absolute; bottom: -18px; font-size: 10px; color: #666; width: 60px; text-align: center; white-space: nowrap; }
+
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.2s ease-out; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 32px; left: -4px; color: #555; font-size: 10px; font-weight: bold; }
 
@@ -59,7 +69,7 @@
   .dashboard { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); margin-bottom: 20px; }
   #map { height: 220px; width: 100%; border-radius: 12px; margin-top: 10px; border: 2px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; }
   
-  /* V28: 地圖鎖定按鈕樣式 */
+  /* 地圖鎖定按鈕樣式 */
   .map-lock-btn { 
     position: absolute; bottom: 10px; right: 10px; 
     background: rgba(0,0,0,0.6); color: white; 
@@ -97,6 +107,9 @@
   .btn-share-gpx { background-color: #FF9800; }
   .btn-line-text { background-color: #06C755; grid-column: 1 / -1; font-size: 18px; }
   .status-bar { text-align: center; color: #666; margin: 15px 0; font-size: 16px; font-weight: bold; }
+  
+  /* 校正提示 */
+  #calibToast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 50px; font-size: 14px; z-index: 2000; display: none; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -114,8 +127,12 @@
       <button id="browserBtn" class="browser-btn" onclick="openInBrowser()">
         1、🌐 用預設瀏覽器開啟
       </button>
-      <div class="compass-container" onclick="requestCompass()">
-        <div class="compass-arrow" id="compassArrow"></div>
+      
+      <div style="position:relative; text-align:center;">
+        <div class="compass-container" onclick="adjustCompass()">
+          <div class="compass-arrow" id="compassArrow"></div>
+        </div>
+        <div class="compass-label">點擊校正</div>
       </div>
     </div>
 
@@ -210,6 +227,8 @@
       <button class="big-btn btn-dl" onclick="downloadGPX('form')">📥 下載 GPX</button>
     </div>
   </div>
+  
+  <div id="calibToast">羅盤已校正 +90°</div>
 
 </div>
 
@@ -221,23 +240,21 @@
 let gpsLat = 0, gpsLon = 0;   
 let formLat = 0, formLon = 0; 
 let map, marker;
-let isMapLocked = true; // V28: 預設為鎖定
+let isMapLocked = true; // V28: 預設鎖定
 let globalInfo = { acc: "精度 : --", alt: "海拔 : --", weather: "天氣 : --", wind: "風速 : --" };
 let watchId = null;
+let compassOffset = 0; // V29: 羅盤校正值
 
 window.onload = function() {
   initMap();
   startSmartLocate(); 
 };
 
-// === V27 羅盤修正邏輯 ===
+// === V29: 羅盤手動校正與讀取 ===
 function requestCompass() {
-  const isAndroid = /Android/i.test(navigator.userAgent);
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission().then(r => {
-      if (r === 'granted') {
-        window.addEventListener('deviceorientation', handleOrientation);
-      }
+      if (r === 'granted') window.addEventListener('deviceorientation', handleOrientation);
     });
   } else {
     if ('ondeviceorientationabsolute' in window) {
@@ -248,12 +265,23 @@ function requestCompass() {
   }
 }
 
+// 點擊羅盤觸發校正 (每次+90度)
+function adjustCompass() {
+  compassOffset = (compassOffset + 90) % 360;
+  const t = document.getElementById('calibToast');
+  t.innerText = `羅盤已校正 +${compassOffset}°`;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2000);
+}
+
 function handleOrientation(e) {
   let heading = null;
   const arrow = document.getElementById('compassArrow');
+  
   if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
     heading = e.webkitCompassHeading;
   } else if (e.absolute === true && e.alpha !== null) {
+    // Android Absolute Compensation
     let screenAngle = 0;
     if (window.screen.orientation && window.screen.orientation.angle) {
       screenAngle = window.screen.orientation.angle;
@@ -262,13 +290,15 @@ function handleOrientation(e) {
     }
     heading = 360 - e.alpha - screenAngle;
   }
+  
   if (heading !== null) {
-    heading = (heading + 360) % 360;
-    arrow.style.transform = `rotate(${-heading}deg)`;
+    // 套用手動校正值
+    let finalHeading = (heading + compassOffset + 360) % 360;
+    arrow.style.transform = `rotate(${-finalHeading}deg)`;
   }
 }
 
-// === V26 核心：智慧連續定位與飄移修正 ===
+// === V26: 智慧定位 ===
 function startSmartLocate() {
   const display = document.getElementById('gpsDisplayVal');
   const aiBox = document.getElementById('aiHintBox');
@@ -325,7 +355,7 @@ function handlePositionError(err) {
   runAiDiagnosis(null, err);
 }
 
-// === AI 診斷邏輯 (V25 + V26) ===
+// === V25 診斷邏輯 ===
 async function runAiDiagnosis(p, error) {
   const aiBox = document.getElementById('aiHintBox');
   const browserBtn = document.getElementById('browserBtn');
@@ -375,39 +405,22 @@ async function runAiDiagnosis(p, error) {
 function switchTab(t) { document.querySelectorAll('.tab-btn, .page-section').forEach(el => el.classList.remove('active')); if(t==='locate') { document.querySelector('.tab-btn:nth-child(1)').classList.add('active'); document.getElementById('page-locate').classList.add('active'); map.invalidateSize(); } else { document.querySelector('.tab-btn:nth-child(2)').classList.add('active'); document.getElementById('page-convert').classList.add('active'); } }
 function getWindDirection(d) { const dirs=['北','東北','東','東南','南','西南','西','西北']; return dirs[Math.round(d/45)%8]||""; }
 
-// V28: 初始化地圖時禁用互動
 function initMap() { 
-  map = L.map('map', {
-    zoomControl: false,
-    dragging: false,       // 禁用拖曳
-    touchZoom: false,      // 禁用觸控縮放
-    scrollWheelZoom: false,// 禁用滾輪
-    doubleClickZoom: false // 禁用雙擊
-  }).setView([23.6, 120.9], 7); 
+  map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false}).setView([23.6, 120.9], 7); 
   L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png').addTo(map); 
 }
-
 function updateMap(lat, lon) { if(!map)return; map.setView([lat, lon], 15); if(marker)map.removeLayer(marker); marker=L.marker([lat,lon]).addTo(map); }
-
-// V28: 切換鎖定狀態
 function toggleMapLock() { 
-  const btn = document.querySelector('.map-lock-btn');
-  isMapLocked = !isMapLocked; // 切換變數狀態
-  
-  if (isMapLocked) {
-    map.dragging.disable(); map.touchZoom.disable(); map.scrollWheelZoom.disable(); 
-    btn.innerText = "🔓 解鎖地圖"; 
-    btn.style.background = "rgba(0,0,0,0.6)"; 
-  } else {
-    map.dragging.enable(); map.touchZoom.enable(); map.scrollWheelZoom.enable(); 
-    btn.innerText = "🔒 鎖定地圖"; 
-    btn.style.background = "#E91E63"; 
-  } 
+  const btn = document.querySelector('.map-lock-btn'); isMapLocked = !isMapLocked; 
+  if (isMapLocked) { map.dragging.disable(); map.touchZoom.disable(); map.scrollWheelZoom.disable(); btn.innerText = "🔓 解鎖地圖"; btn.style.background = "rgba(0,0,0,0.6)"; } 
+  else { map.dragging.enable(); map.touchZoom.enable(); map.scrollWheelZoom.enable(); btn.innerText = "🔒 鎖定地圖"; btn.style.background = "#E91E63"; } 
 }
 
 function convertFrom(t) { try{let lat=0,lon=0;if(t==='dd'){lat=parseFloat(document.getElementById('ddN').value);lon=parseFloat(document.getElementById('ddE').value);}else if(t==='dms'){lat=parseFloat(document.getElementById('dmsN_d').value||0)+parseFloat(document.getElementById('dmsN_m').value||0)/60+parseFloat(document.getElementById('dmsN_s').value||0)/3600; lon=parseFloat(document.getElementById('dmsE_d').value||0)+parseFloat(document.getElementById('dmsE_m').value||0)/60+parseFloat(document.getElementById('dmsE_s').value||0)/3600;}else if(t==='dmm'){lat=parseFloat(document.getElementById('dmmN_d').value||0)+parseFloat(document.getElementById('dmmN_m').value||0)/60; lon=parseFloat(document.getElementById('dmmE_d').value||0)+parseFloat(document.getElementById('dmmE_m').value||0)/60;}if(isNaN(lat)||isNaN(lon))throw Error; formLat=lat; formLon=lon; updateAllFields(lat,lon); alert("轉換成功！可使用下方按鈕分享");}catch(e){alert("數值錯誤");} }
 function updateAllFields(lat, lon) { lat = Math.abs(lat); lon = Math.abs(lon); document.getElementById('ddN').value = formLat.toFixed(6); document.getElementById('ddE').value = formLon.toFixed(6); const dmmN_d = Math.floor(lat), dmmN_m = (lat-dmmN_d)*60; const dmmE_d = Math.floor(lon), dmmE_m = (lon-dmmE_d)*60; document.getElementById('dmmN_d').value = dmmN_d; document.getElementById('dmmN_m').value = dmmN_m.toFixed(4); document.getElementById('dmmE_d').value = dmmE_d; document.getElementById('dmmE_m').value = dmmE_m.toFixed(4); const dmsN_d = Math.floor(lat), dmsN_m_f = (lat-dmsN_d)*60, dmsN_m = Math.floor(dmsN_m_f), dmsN_s = (dmsN_m_f-dmsN_m)*60; const dmsE_d = Math.floor(lon), dmsE_m_f = (lon-dmsE_d)*60, dmsE_m = Math.floor(dmsE_m_f), dmsE_s = (dmsE_m_f-dmsE_m)*60; document.getElementById('dmsN_d').value=dmsN_d; document.getElementById('dmsN_m').value=dmsN_m; document.getElementById('dmsN_s').value=dmsN_s.toFixed(2); document.getElementById('dmsE_d').value=dmsE_d; document.getElementById('dmsE_m').value=dmsE_m; document.getElementById('dmsE_s').value=dmsE_s.toFixed(2); }
 function getSource(t) { return t==='gps'?{lat:gpsLat,lon:gpsLon,accStr:globalInfo.acc,altStr:globalInfo.alt,weatherStr:globalInfo.weather,windStr:globalInfo.wind}:{lat:formLat,lon:formLon}; }
+
+// V25 分享格式 (含 Google Maps 連結)
 function shareLineText(t) {
   const d=getSource(t); if(!d||(t==='gps'&&gpsLat===0))return alert("無座標");
   const dms = ddToDms(d.lat, d.lon);
@@ -419,6 +432,7 @@ function shareLineText(t) {
   window.location.href=`https://line.me/R/msg/text/?${encodeURIComponent(c)}`;
 }
 function ddToDms(lat, lon) { const toDms = (val, isLat) => { const dir = val >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W'); val = Math.abs(val); const d = Math.floor(val); const m = Math.floor((val - d) * 60); const s = ((val - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}"${dir}`; }; return `${toDms(lat, true)}, ${toDms(lon, false)}`; }
+
 function openGoogleMap(t) { const d=getSource(t); if(d) window.open(`https://www.google.com/maps?q=${d.lat},${d.lon}`); }
 function openTopoMap(t) { const d=getSource(t); if(d) window.open(`https://opentopomap.org/#marker=15/${d.lat}/${d.lon}`); }
 function downloadGPX(t) { const d=getSource(t); if(!d)return; const g=`<gpx><wpt lat="${d.lat}" lon="${d.lon}"><name>Point</name></wpt></gpx>`; const b=new Blob([g],{type:"application/gpx+xml"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="p.gpx"; a.click(); }
