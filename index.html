@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>全能定位轉換助手 V26 AI-Smart @yuushiemm</title>
+<title>全能定位轉換助手 V27 Compass-Fix @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
@@ -49,7 +49,7 @@
   .btn-step2.dimmed { opacity: 0.5; background-color: #888; box-shadow: none; pointer-events: none; }
 
   /* === AI 診斷框 === */
-  #aiHintBox { display: block; margin-bottom: 15px; padding: 15px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 18px; line-height: 1.5; border: 2px solid #ddd; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: background-color 0.5s; }
+  #aiHintBox { display: block; margin-bottom: 15px; padding: 15px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 18px; line-height: 1.5; border: 2px solid #ddd; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
   /* 權限教學覆蓋層 */
   #permGuide { display: none; background: #ffebee; border: 2px solid red; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
@@ -122,7 +122,7 @@
       <button class="perm-btn" onclick="startSmartLocate()">✅ 設定好了，重試</button>
     </div>
 
-    <div id="aiHintBox">📡 AI 正在連線衛星並修正訊號飄移...</div>
+    <div id="aiHintBox">⚠️ 正在連線衛星...</div>
 
     <div class="dashboard" id="dashboard">
       <div style="text-align:center; font-size:14px; margin-bottom:5px; opacity:0.9;">即時定位資訊</div>
@@ -214,12 +214,66 @@ let formLat = 0, formLon = 0;
 let map, marker;
 let isMapLocked = true; 
 let globalInfo = { acc: "精度 : --", alt: "海拔 : --", weather: "天氣 : --", wind: "風速 : --" };
-let watchId = null; // V26: 用於連續追蹤的 ID
+let watchId = null;
 
 window.onload = function() {
   initMap();
-  startSmartLocate(); // V26: 啟動智慧連續定位
+  startSmartLocate(); 
 };
+
+// === V27 羅盤修正邏輯 ===
+// Android 的 deviceorientationabsolute 才是真的磁北
+// 並且要扣掉 window.screen.orientation.angle 或 window.orientation
+function requestCompass() {
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 權限請求
+    DeviceOrientationEvent.requestPermission().then(r => {
+      if (r === 'granted') {
+        window.addEventListener('deviceorientation', handleOrientation);
+      }
+    });
+  } else {
+    // Android 或一般瀏覽器
+    // 優先監聽 absolute 事件 (Android Chrome)
+    if ('ondeviceorientationabsolute' in window) {
+      window.addEventListener('deviceorientationabsolute', handleOrientation);
+    } else {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+  }
+}
+
+function handleOrientation(e) {
+  let heading = null;
+  const arrow = document.getElementById('compassArrow');
+  
+  // 1. iOS: webkitCompassHeading (0~360, 0=North)
+  if (e.webkitCompassHeading !== undefined && e.webkitCompassHeading !== null) {
+    heading = e.webkitCompassHeading;
+  } 
+  // 2. Android (Absolute): alpha (0~360, 0=North, but counter-clockwise usually?)
+  // W3C spec: alpha=0 is North, increasing counter-clockwise.
+  // We need clockwise for CSS rotate. So: 360 - alpha.
+  // PLUS: Screen Rotation Compensation
+  else if (e.absolute === true && e.alpha !== null) {
+    let screenAngle = 0;
+    if (window.screen.orientation && window.screen.orientation.angle) {
+      screenAngle = window.screen.orientation.angle;
+    } else if (window.orientation) {
+      screenAngle = window.orientation;
+    }
+    // 修正公式: 360 - alpha - screenAngle
+    heading = 360 - e.alpha - screenAngle;
+  }
+  
+  if (heading !== null) {
+    // Normalize to 0-360
+    heading = (heading + 360) % 360;
+    arrow.style.transform = `rotate(${-heading}deg)`;
+  }
+}
 
 // === V26 核心：智慧連續定位與飄移修正 ===
 function startSmartLocate() {
@@ -230,36 +284,24 @@ function startSmartLocate() {
     aiBox.innerHTML = "❌ 您的手機不支援定位功能";
     return;
   }
-
-  // 避免重複啟動
   if (watchId !== null) { navigator.geolocation.clearWatch(watchId); }
 
-  // 初始狀態顯示
   display.innerHTML = '<span style="font-size:16px">📡 連線衛星中...</span>';
   aiBox.innerHTML = "📡 <b>AI 正在連線衛星並修正飄移...</b>";
   aiBox.style.background = "#fff3e0"; aiBox.style.borderColor = "#ff9800"; aiBox.style.color = "#333";
 
-  // 使用 watchPosition 進行連續追蹤 (解決飄移)
   watchId = navigator.geolocation.watchPosition(
-    (position) => {
-      // 成功取得座標 (包含後續的修正更新)
-      handlePositionSuccess(position);
-    },
-    (err) => {
-      // 定位失敗 (包含 Timeout)
-      handlePositionError(err);
-    },
-    { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 } // V26: 延長 Timeout 到 30s
+    (position) => { handlePositionSuccess(position); },
+    (err) => { handlePositionError(err); },
+    { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
   );
 }
 
-// === 成功處理函式 ===
 function handlePositionSuccess(position) {
   const p = position.coords;
   gpsLat = p.latitude; gpsLon = p.longitude;
   const acc = Math.round(p.accuracy);
   
-  // 更新介面數值
   const display = document.getElementById('gpsDisplayVal');
   display.innerHTML = `<span>${gpsLat.toFixed(5)},</span> <span>${gpsLon.toFixed(5)}</span>`;
   
@@ -269,38 +311,28 @@ function handlePositionSuccess(position) {
   document.getElementById('accVal').innerText = globalInfo.acc;
   document.getElementById('altVal').innerText = globalInfo.alt;
 
-  // 更新地圖與天氣
   updateMap(gpsLat, gpsLon);
   fetchWeather(gpsLat, gpsLon);
-  requestCompass();
-
-  // 呼叫 AI 判斷 (傳入 null 代表無錯誤)
+  requestCompass(); // V27: 啟動修正後的羅盤
   runAiDiagnosis(p, null);
 }
 
-// === 錯誤處理函式 (V26: 自動重試邏輯) ===
 function handlePositionError(err) {
   const display = document.getElementById('gpsDisplayVal');
   const aiBox = document.getElementById('aiHintBox');
 
-  // 如果是 Timeout (使用者按太慢，或訊號差)，AI 自動重試
   if (err.code === 3) { // TIMEOUT
-    console.log("Locate Timeout, Retrying...");
     display.innerHTML = '<span style="color:#e65100">連線逾時...</span>';
     aiBox.innerHTML = `⚠️ <b>連線逾時，AI 正在自動重試...</b><br>請保持在戶外空曠處`;
-    aiBox.style.background = "#fff3e0"; aiBox.style.borderColor = "#ff9800";
-    
-    // 1秒後自動重啟定位
     setTimeout(() => { startSmartLocate(); }, 1000);
     return;
   }
   
-  // 其他錯誤 (權限拒絕等)，呼叫 AI 診斷處理
   display.innerHTML = '<span style="color:red">定位失敗</span>';
   runAiDiagnosis(null, err);
 }
 
-// === AI 診斷邏輯 ===
+// === AI 診斷邏輯 (V25 + V26) ===
 async function runAiDiagnosis(p, error) {
   const aiBox = document.getElementById('aiHintBox');
   const browserBtn = document.getElementById('browserBtn');
@@ -308,62 +340,48 @@ async function runAiDiagnosis(p, error) {
   const permGuide = document.getElementById('permGuide');
   const isLine = /Line/i.test(navigator.userAgent);
 
-  // 1. 錯誤處理：權限被拒
+  // 1. 錯誤處理
   if (error) {
     if (isLine) {
-      // LINE 內失敗 -> 強制引導瀏覽器
       aiBox.innerHTML = `⚠️ <b>LINE 無法開啟定位</b><br>👇 <b>請直接按【用預設瀏覽器開啟】</b><br><small>跳轉後請務必點選<b>「允許」</b>定位！</small>`;
       aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
-      browserBtn.classList.add('urgent'); 
-      shareBtn.classList.add('dimmed');   
+      browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
       document.getElementById('dashboard').style.opacity = '0.5';
     } else {
-      // 外部失敗 -> 顯示教學
       if (error.code === 1) { 
-        permGuide.style.display = 'block'; 
-        aiBox.style.display = 'none';
-        document.getElementById('dashboard').style.opacity = '0.5';
+        permGuide.style.display = 'block'; aiBox.style.display = 'none'; document.getElementById('dashboard').style.opacity = '0.5';
       } else {
-        // 位置不可用
-        aiBox.innerHTML = `⚠️ 無法取得位置<br>請確認 GPS 開啟並移至戶外`;
+        aiBox.innerHTML = `⚠️ 定位錯誤<br>請確認 GPS 開啟並移至戶外`;
         aiBox.style.borderColor = "orange"; aiBox.style.background = "#fff3e0";
       }
     }
     return;
   }
 
-  // 成功取得座標 -> 恢復介面
-  permGuide.style.display = 'none';
-  aiBox.style.display = 'block';
-  document.getElementById('dashboard').style.opacity = '1';
-
+  // 成功
+  permGuide.style.display = 'none'; aiBox.style.display = 'block'; document.getElementById('dashboard').style.opacity = '1';
   const acc = Math.round(p.accuracy);
-  browserBtn.classList.remove('urgent');
-  shareBtn.classList.remove('dimmed');
+  browserBtn.classList.remove('urgent'); shareBtn.classList.remove('dimmed');
 
   // 2. 精度判定
   if (acc <= 30) {
-    // 精度優 (綠燈)
     aiBox.innerHTML = `✅ 訊號已穩定 (±${acc}m)<br><span style="font-size:24px">👆</span> <b>請直接按上方【分享到 LINE】</b>`;
     aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32";
   } else {
-    // 精度差 (黃燈) -> AI 提示正在修正
     if (isLine) {
-      aiBox.innerHTML = `⚠️ <b>LINE 內訊號飄移 (±${acc}m)</b><br>建議改按【用瀏覽器開啟】修正精度<br>或者 👆 <b>先按上方分享大概位置</b>`;
+      aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議改按【用預設瀏覽器開啟】</b><br><small>跳轉後請務必點選<b>「允許」</b>定位！</small>`;
       aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
-      browserBtn.classList.add('urgent'); 
+      browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
     } else {
-      // 外部瀏覽器飄移 -> AI 提示
       let advice = "AI 正在修正飄移...";
       if (window.ai) { try { const s = await window.ai.createTextSession(); advice = await s.prompt("GPS誤差"+acc+"米，安撫長輩說AI正在修正訊號，請稍等或先分享。10字內。"); } catch(e){} }
-      
       aiBox.innerHTML = `📡 訊號鎖定中... (±${acc}m)<br>${advice}<br>或者 <span style="font-size:20px">👆</span> <b>先按上方【分享】</b>`;
       aiBox.style.borderColor = "#ff9800"; aiBox.style.background = "#fff3e0"; aiBox.style.color = "#ef6c00";
     }
   }
 }
 
-// === 以下 V17 功能完全保留 ===
+// === V17 功能 ===
 function switchTab(t) { document.querySelectorAll('.tab-btn, .page-section').forEach(el => el.classList.remove('active')); if(t==='locate') { document.querySelector('.tab-btn:nth-child(1)').classList.add('active'); document.getElementById('page-locate').classList.add('active'); map.invalidateSize(); } else { document.querySelector('.tab-btn:nth-child(2)').classList.add('active'); document.getElementById('page-convert').classList.add('active'); } }
 function getWindDirection(d) { const dirs=['北','東北','東','東南','南','西南','西','西北']; return dirs[Math.round(d/45)%8]||""; }
 function initMap() { map = L.map('map', {zoomControl: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png').addTo(map); }
@@ -372,39 +390,22 @@ function toggleMapLock() { isMapLocked=!isMapLocked; const b=document.querySelec
 function convertFrom(t) { try{let lat=0,lon=0;if(t==='dd'){lat=parseFloat(document.getElementById('ddN').value);lon=parseFloat(document.getElementById('ddE').value);}else if(t==='dms'){lat=parseFloat(document.getElementById('dmsN_d').value||0)+parseFloat(document.getElementById('dmsN_m').value||0)/60+parseFloat(document.getElementById('dmsN_s').value||0)/3600; lon=parseFloat(document.getElementById('dmsE_d').value||0)+parseFloat(document.getElementById('dmsE_m').value||0)/60+parseFloat(document.getElementById('dmsE_s').value||0)/3600;}else if(t==='dmm'){lat=parseFloat(document.getElementById('dmmN_d').value||0)+parseFloat(document.getElementById('dmmN_m').value||0)/60; lon=parseFloat(document.getElementById('dmmE_d').value||0)+parseFloat(document.getElementById('dmmE_m').value||0)/60;}if(isNaN(lat)||isNaN(lon))throw Error; formLat=lat; formLon=lon; updateAllFields(lat,lon); alert("轉換成功！可使用下方按鈕分享");}catch(e){alert("數值錯誤");} }
 function updateAllFields(lat, lon) { lat = Math.abs(lat); lon = Math.abs(lon); document.getElementById('ddN').value = formLat.toFixed(6); document.getElementById('ddE').value = formLon.toFixed(6); const dmmN_d = Math.floor(lat), dmmN_m = (lat-dmmN_d)*60; const dmmE_d = Math.floor(lon), dmmE_m = (lon-dmmE_d)*60; document.getElementById('dmmN_d').value = dmmN_d; document.getElementById('dmmN_m').value = dmmN_m.toFixed(4); document.getElementById('dmmE_d').value = dmmE_d; document.getElementById('dmmE_m').value = dmmE_m.toFixed(4); const dmsN_d = Math.floor(lat), dmsN_m_f = (lat-dmsN_d)*60, dmsN_m = Math.floor(dmsN_m_f), dmsN_s = (dmsN_m_f-dmsN_m)*60; const dmsE_d = Math.floor(lon), dmsE_m_f = (lon-dmsE_d)*60, dmsE_m = Math.floor(dmsE_m_f), dmsE_s = (dmsE_m_f-dmsE_m)*60; document.getElementById('dmsN_d').value=dmsN_d; document.getElementById('dmsN_m').value=dmsN_m; document.getElementById('dmsN_s').value=dmsN_s.toFixed(2); document.getElementById('dmsE_d').value=dmsE_d; document.getElementById('dmsE_m').value=dmsE_m; document.getElementById('dmsE_s').value=dmsE_s.toFixed(2); }
 function getSource(t) { return t==='gps'?{lat:gpsLat,lon:gpsLon,accStr:globalInfo.acc,altStr:globalInfo.alt,weatherStr:globalInfo.weather,windStr:globalInfo.wind}:{lat:formLat,lon:formLon}; }
-
-// === V25 修正：完整補回 V17 分享格式 (含 Google Maps) ===
 function shareLineText(t) {
   const d=getSource(t); if(!d||(t==='gps'&&gpsLat===0))return alert("無座標");
-  
   const dms = ddToDms(d.lat, d.lon);
   const topoUrl = `https://opentopomap.org/#marker=15/${d.lat}/${d.lon}`;
-  const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`; // V25 修復連結
-  
-  let c=`📍 位置分享\n`;
-  c+=`──────────────\n`;
-  c+=`經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n`;
-  c+=`度分秒: ${dms}\n`;
+  const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`; 
+  let c=`📍 位置分享\n──────────────\n經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n度分秒: ${dms}\n`;
   if(t==='gps') c+=`${d.accStr}\n${d.altStr}\n${d.weatherStr}\n${d.windStr}\n`;
-  c+=`──────────────\n`;
-  c+=`⛰️ Topo 地圖:\n${topoUrl}\n\n`;
-  c+=`🌏 Google 地圖:\n${gmapUrl}`;
-  
+  c+=`──────────────\n⛰️ Topo 地圖:\n${topoUrl}\n\n🌏 Google 地圖:\n${gmapUrl}`;
   window.location.href=`https://line.me/R/msg/text/?${encodeURIComponent(c)}`;
 }
-
-// V17 ddToDms
-function ddToDms(lat, lon) {
-  const toDms = (val, isLat) => { const dir = val >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W'); val = Math.abs(val); const d = Math.floor(val); const m = Math.floor((val - d) * 60); const s = ((val - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}"${dir}`; };
-  return `${toDms(lat, true)}, ${toDms(lon, false)}`;
-}
-
+function ddToDms(lat, lon) { const toDms = (val, isLat) => { const dir = val >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W'); val = Math.abs(val); const d = Math.floor(val); const m = Math.floor((val - d) * 60); const s = ((val - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}"${dir}`; }; return `${toDms(lat, true)}, ${toDms(lon, false)}`; }
 function openGoogleMap(t) { const d=getSource(t); if(d) window.open(`https://www.google.com/maps?q=${d.lat},${d.lon}`); }
 function openTopoMap(t) { const d=getSource(t); if(d) window.open(`https://opentopomap.org/#marker=15/${d.lat}/${d.lon}`); }
 function downloadGPX(t) { const d=getSource(t); if(!d)return; const g=`<gpx><wpt lat="${d.lat}" lon="${d.lon}"><name>Point</name></wpt></gpx>`; const b=new Blob([g],{type:"application/gpx+xml"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="p.gpx"; a.click(); }
 function takeSnapshot() { if(gpsLat===0)return; const b=document.querySelector('.btn-shot'); const o=b.innerText; b.innerText="..."; html2canvas(document.getElementById('dashboard'),{scale:2}).then(c=>{const a=document.createElement('a');a.download="map.png";a.href=c.toDataURL();a.click();b.innerText=o;}); }
 async function fetchWeather(lat,lon) { try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const d=await r.json(); globalInfo.weather=`天氣: ${d.current_weather.temperature}°C`; document.getElementById('weatherVal').innerText=globalInfo.weather; globalInfo.wind=`風速: ${d.current_weather.windspeed}`; document.getElementById('windVal').innerText=globalInfo.wind; }catch(e){} }
-function requestCompass() { if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){DeviceOrientationEvent.requestPermission().then(r=>{if(r==='granted')window.addEventListener('deviceorientation',e=>{let h=e.webkitCompassHeading||(360-e.alpha);if(h)document.getElementById('compassArrow').style.transform=`rotate(${-h}deg)`;})});}else{window.addEventListener('deviceorientation',e=>{let h=e.webkitCompassHeading||(360-e.alpha);if(h)document.getElementById('compassArrow').style.transform=`rotate(${-h}deg)`;});} }
 function openInBrowser() { const u=window.location.href; window.location.href=u+(u.indexOf("?")>-1?"&":"?")+"openExternalBrowser=1"; }
 async function shareGpxFile(t){ shareLineText(t); } 
 </script>
