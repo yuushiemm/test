@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>全能定位轉換助手 V18 AI-Safe @yuushiemm</title>
+<title>全能定位轉換助手 V19 Final @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
@@ -20,17 +20,19 @@
   .page-section.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-  .top-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-  .browser-btn { flex: 1; background: #00C853; color: white; border: none; padding: 12px; border-radius: 50px; font-weight: bold; font-size: 15px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; text-align: left; }
+  .top-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  /* 按鈕 1 (開啟瀏覽器) */
+  .browser-btn { flex: 1; background: #00C853; color: white; border: none; padding: 12px; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 3px 6px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; text-align: left; border: 2px solid white; }
   .browser-btn:active { transform: scale(0.98); }
   .compass-container { width: 50px; height: 50px; flex-shrink: 0; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid #ddd; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 30px solid #ff5252; transform-origin: center bottom; position: relative; top: -12px; transition: transform 0.2s ease-out; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 32px; left: -4px; color: #555; font-size: 10px; font-weight: bold; }
 
-  /* === 新增：AI 診斷區塊樣式 (插入在儀表板上方) === */
-  #aiHintBox { display: none; margin-bottom: 15px; padding: 12px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 16px; border: 2px solid #ff9800; background: #fff3e0; animation: pulse 2s infinite; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+  /* === AI 診斷區塊 (位於按鈕 1 下方) === */
+  #aiHintBox { display: block; margin-bottom: 15px; padding: 15px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 18px; line-height: 1.5; border: 3px solid #ff9800; background: #fff3e0; animation: pulse 2s infinite; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
+  /* 儀表板 */
   .dashboard { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 15px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.25); margin-bottom: 20px; }
   #map { height: 250px; width: 100%; border-radius: 12px; margin-top: 10px; border: 2px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; }
   .map-lock-btn { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; z-index: 1000; }
@@ -41,7 +43,7 @@
   .info-item { background: rgba(255,255,255,0.15); padding: 10px 5px; border-radius: 8px; backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; }
   .info-value { font-size: 17px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center; }
 
-  /* 轉換卡片樣式 */
+  /* 轉換卡片與輸入框 */
   .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
   .card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; flex-wrap: wrap; }
   .card-tag { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 4px; color: #666; font-weight: normal; margin-left: auto; }
@@ -60,7 +62,7 @@
   .action-area { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
   .big-btn { padding: 15px; border: none; border-radius: 12px; font-size: 15px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-decoration: none; box-sizing: border-box; }
   
-  .btn-step2 { background-color: #06C755; grid-column: 1 / -1; font-size: 18px; }
+  .btn-step2 { background-color: #06C755; grid-column: 1 / -1; font-size: 18px; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,199,85,0.4); }
   .btn-shot { background-color: #E91E63; }
   .btn-refresh { background-color: #795548; }
   .btn-map { background-color: #4285F4; }
@@ -90,7 +92,7 @@
       </div>
     </div>
 
-    <div id="aiHintBox"></div>
+    <div id="aiHintBox">⚠️ 正在偵測環境...</div>
 
     <div class="dashboard" id="dashboard">
       <div style="text-align:center; font-size:14px; margin-bottom:5px; opacity:0.9;">即時定位資訊</div>
@@ -113,7 +115,6 @@
     </div>
 
     <div id="accStatus" class="acc-status"></div>
-    <div class="warning-text">⚠️ 授權定位成功後方可分享</div>
     
     <div class="action-area">
       <button class="big-btn btn-step2" onclick="shareLineText('gps')">
@@ -193,70 +194,79 @@ let map, marker;
 let isMapLocked = true; 
 let globalInfo = { acc: "精度 : --", alt: "海拔 : --", weather: "天氣 : --", wind: "風速 : --" };
 
+// === 頁面載入時：立即執行環境檢查與初始化 ===
 window.onload = function() {
+  checkEnvironmentAndWarn(); // 立即檢查 LINE 環境
   initMap();
   getLocation(); 
 };
 
-// === 新增：AI 環境診斷與導引邏輯 (獨立函數，不干擾主流程) ===
+// === 自動環境偵測：不依賴 GPS，開啟即執行 ===
+function checkEnvironmentAndWarn() {
+  const ua = navigator.userAgent;
+  const isLine = /Line/i.test(ua);
+  const aiBox = document.getElementById('aiHintBox');
+  const btn1 = document.getElementById('browserBtn');
+
+  if (isLine) {
+    // 偵測到 LINE：紅燈 + 指引按鈕 1
+    aiBox.innerHTML = "⚠️ <b>偵測到 LINE 內建瀏覽器</b><br>定位可能不準確。<br>👇 請點擊上方綠色 <b>按鈕 1</b> 開啟";
+    aiBox.style.borderColor = "#f44336"; 
+    aiBox.style.background = "#ffebee";
+    aiBox.style.color = "#d32f2f";
+    // 讓按鈕 1 閃爍引起注意
+    setInterval(() => {
+      btn1.style.opacity = (btn1.style.opacity == 0.7 ? 1 : 0.7);
+    }, 800);
+  } else {
+    // 非 LINE：預設顯示
+    aiBox.innerHTML = "📡 正在接收衛星訊號...<br>請在戶外空曠處使用";
+    aiBox.style.borderColor = "#ff9800"; 
+    aiBox.style.background = "#fff3e0";
+  }
+}
+
+// === 定位成功後的 AI 二次診斷 ===
 async function runAiDiagnosis(p) {
   const ua = navigator.userAgent;
-  const isMobile = /iPhone|Android/i.test(ua);
   const isLine = /Line/i.test(ua);
   const acc = Math.round(p.accuracy);
   const aiBox = document.getElementById('aiHintBox');
 
-  // 電腦端隱藏 AI 提示
-  if (!isMobile) { 
-    aiBox.style.display = 'none'; 
-    return; 
-  }
+  // 如果是在 LINE 裡面，保持原本的警告，不改變
+  if (isLine) return; 
 
-  aiBox.style.display = 'block';
-  
-  // 1. 優先處理 LINE 瀏覽器問題
-  if (isLine) {
-    aiBox.innerHTML = "⚠️ <b>偵測到 LINE 瀏覽器</b><br>請點選右上角『...』以預設瀏覽器開啟<br>否則無法精確定位！";
-    aiBox.style.borderColor = "#f44336"; aiBox.style.background = "#ffebee";
-    return;
-  } 
-
-  // 2. 處理精度問題
+  // 非 LINE 環境，檢查精度
   if (acc > 40) {
-    let advice = "訊號受遮蔽，請移動到空曠處。";
-    
-    // 嘗試呼叫內建 AI (若無則使用預設字串)
+    let advice = "訊號受遮蔽，請移至戶外空曠處";
+    // 嘗試呼叫內建 AI 產生更白話建議
     if (window.ai) {
       try {
         const session = await window.ai.createTextSession();
-        // 限制提示字數以免跑版
-        advice = await session.prompt("GPS誤差"+acc+"米，給長輩一句10字內簡單指令到空曠處。");
-      } catch(e) { console.log("AI Error:", e); }
+        advice = await session.prompt("GPS誤差"+acc+"米，請用10個字以內教長輩怎麼做會變準。");
+      } catch(e) {}
     }
-    
-    aiBox.innerHTML = `❌ 誤差過大 (±${acc}m)<br>💡 建議：${advice}`;
-    aiBox.style.borderColor = "#ff9800"; aiBox.style.background = "#fff3e0";
+    aiBox.innerHTML = `❌ 誤差過大 (±${acc}m)<br>💡 建議：${advice}<br>👆 若誤差仍大，請按上方 <b>按鈕 1</b>`;
+    aiBox.style.borderColor = "#ff9800"; 
+    aiBox.style.background = "#fff3e0";
+    aiBox.style.color = "#ef6c00";
   } else {
-    // 3. 定位良好
-    aiBox.innerHTML = `✅ 定位準確 (±${acc}m)<br>您可以放心分享位置。`;
-    aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9";
-    // 3秒後自動隱藏成功訊息，保持畫面簡潔
-    setTimeout(() => { aiBox.style.display = 'none'; }, 5000);
+    // 定位良好
+    aiBox.innerHTML = `✅ 定位準確 (±${acc}m)<br>👇 請往下滑，按下方綠色 <b>按鈕 2</b> 分享到 LINE`;
+    aiBox.style.borderColor = "#4caf50"; 
+    aiBox.style.background = "#e8f5e9";
+    aiBox.style.color = "#2e7d32";
   }
 }
 
 function getLocation() {
   const display = document.getElementById('gpsDisplayVal');
   const accEl = document.getElementById('accStatus');
-  const aiBox = document.getElementById('aiHintBox');
 
   if (!navigator.geolocation) return alert("不支援定位");
 
   display.innerHTML = '<span style="font-size:16px">📡 正在接收衛星與基地台訊號...</span>';
   accEl.innerHTML = ""; 
-  
-  // 重置 AI 提示
-  aiBox.style.display = 'none';
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
@@ -285,18 +295,15 @@ function getLocation() {
       fetchWeather(gpsLat, gpsLon);
       requestCompass();
 
-      // === 這裡呼叫 AI 判斷 (放在最後執行，不卡流程) ===
+      // === 呼叫 AI 診斷 (更新提示框內容) ===
       runAiDiagnosis(p);
     },
     (err) => {
       display.innerHTML = '<span style="color:#ffcccc">定位失敗</span>';
       accEl.innerHTML = "❌ 定位失敗 (請檢查 GPS)";
       accEl.style.color = "red";
-      
-      // 當定位失敗時，AI 提示框跳出來警告
-      aiBox.style.display = 'block';
-      aiBox.innerHTML = "❌ 無法取得位置！<br>請到手機「設定」開啟定位權限。";
-      aiBox.style.borderColor = "red"; aiBox.style.background = "#ffebee";
+      // 定位失敗時的提示
+      document.getElementById('aiHintBox').innerHTML = "❌ 無法定位！<br>請確認手機「定位」功能已開啟";
     },
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
   );
