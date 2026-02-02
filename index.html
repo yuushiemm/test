@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="author" content="yuushiemm">
-<title>全能定位轉換助手 V54 Fixed @yuushiemm</title>
+<title>全能定位轉換助手 V52 Debug @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -17,17 +17,19 @@
     font-family: -apple-system, "Microsoft JhengHei", sans-serif; 
     padding: 0; background: #f4f6f8; color: #333; margin: 0; 
     padding-bottom: calc(80px + env(safe-area-inset-bottom)); 
-    overflow-x: hidden; -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
   }
   .container { max-width: 600px; margin: 0 auto; padding-top: 5px; position: relative; min-height: 100vh; }
   
-  /* === 底部導航 === */
+  /* === 底部導航列 === */
   .tab-nav { 
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; 
     z-index: 9999; background: white; 
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1); 
     padding-bottom: env(safe-area-inset-bottom);
-    height: 55px; max-width: 600px; margin: 0 auto;
+    height: 55px;
+    max-width: 600px; margin: 0 auto;
   }
   .tab-btn { 
     flex: 1; display: flex; justify-content: center; align-items: center;
@@ -54,29 +56,34 @@
   .compass-container { 
     width: 45px; height: 45px; background: white; border-radius: 50%; 
     display: flex; justify-content: center; align-items: center; 
-    border: 2px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; 
+    border: 2px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    cursor: pointer; 
   }
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 28px solid #ff5252; transform-origin: center bottom; position: relative; top: -10px; transition: transform 0.15s linear; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 30px; left: -4px; color: #555; font-size: 9px; font-weight: bold; }
   .compass-hint { position: absolute; bottom: -16px; width: 150%; left: -25%; text-align: center; font-size: 9px; color: #888; display: none; }
   .ios-mode .compass-hint { display: block; }
 
-  /* 按鈕 */
+  /* 主要按鈕 */
   .btn-step2 { 
     width: 100%; padding: 15px; border: none; border-radius: 10px; 
     font-size: 18px; font-weight: bold; color: white; cursor: pointer; 
     background-color: #06C755; 
     box-shadow: 0 3px 10px rgba(6, 199, 85, 0.3); 
-    display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: center; 
+    margin-bottom: 10px;
   }
 
-  /* 提示框 */
+  /* AI 診斷框 */
   #aiHintBox { 
     display: block; margin-bottom: 10px; padding: 10px; 
     border-radius: 8px; font-weight: bold; text-align: center; 
     font-size: 16px; line-height: 1.4; 
-    border: 1px solid #ddd; background: #fff; transition: all 0.3s;
+    border: 1px solid #ddd; background: #fff; 
+    transition: all 0.3s;
   }
+
+  /* 權限教學 */
   #permGuide { display: none; background: #ffebee; border: 1px solid #ffcdd2; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
   .perm-btn { background: #d32f2f; color: white; padding: 8px 16px; border-radius: 20px; margin-top: 8px; display: inline-block; font-weight: bold; font-size: 14px; }
 
@@ -106,29 +113,43 @@
   
   #sunInfo { 
     margin-top: 5px; font-size: 15px; font-weight: normal; 
-    padding: 4px 12px; border-radius: 12px; 
-    background: rgba(255,255,255,0.15); display: inline-block; white-space: nowrap;
+    padding: 4px 10px; border-radius: 12px; 
+    background: rgba(255,255,255,0.15); 
+    display: inline-block;
+    white-space: nowrap;
   }
 
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
-  .info-item { background: rgba(255,255,255,0.15); padding: 6px 4px; border-radius: 6px; display: flex; justify-content: center; align-items: center; min-height: 40px; }
-  .info-value { font-size: 16px; font-weight: bold; width: 100%; text-align: center; white-space: normal; word-break: break-word; line-height: 1.2; }
+  .info-item { 
+    background: rgba(255,255,255,0.15); padding: 6px 4px; border-radius: 6px; 
+    display: flex; justify-content: center; align-items: center; min-height: 40px; 
+  }
+  .info-value { 
+    font-size: 16px; font-weight: bold; width: 100%; text-align: center; 
+    white-space: normal; word-break: break-word; line-height: 1.2; 
+  }
 
   /* 按鈕群 */
   .secondary-action-area { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-  .big-btn { padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  .big-btn { 
+    padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; 
+    color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; 
+    width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+  }
   .btn-shot { background-color: #E91E63; }
   .btn-refresh { background-color: #795548; }
   .btn-map { background-color: #4285F4; }
   .btn-topo { background-color: #673AB7; }
   .btn-dl { background-color: #607d8b; }
   
-  /* Page 2: 軌跡 */
-  #trackMap { height: 250px; width: 100%; border-radius: 8px; border: 2px solid #ddd; z-index: 1; background: #eee; }
+  /* Page 2: 軌跡 (V52: 單點管理) */
+  #trackMap { height: 250px; width: 100%; border-radius: 8px; border: 2px solid #ddd; z-index: 1; }
   .track-list { margin-top: 10px; max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #eee; }
   .track-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
   .track-info { font-size: 13px; line-height: 1.3; }
   .track-coord { font-family: monospace; color: #666; font-size: 12px; }
+  
+  /* 操作按鈕群 */
   .track-actions { display: flex; gap: 8px; }
   .btn-nav-to { background: #009688; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; }
   .btn-del-point { background: #ef5350; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; }
@@ -136,11 +157,12 @@
   #navPanel { background: linear-gradient(135deg, #009688 0%, #00796b 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; display: none; text-align: center; }
   #navArrow { font-size: 40px; margin: 5px 0; transition: transform 0.2s linear; display: inline-block; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
-  /* Page 3: 轉換 */
+  /* Page 3: 轉換 (V17樣式) */
   .card { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; }
   .card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
   .card-tag { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 4px; color: #666; font-weight: normal; margin-left: auto; }
   .coord-hint { font-size: 12px; color: #E65100; font-weight: bold; margin-right: 5px; }
+  
   .input-row { display: flex; gap: 5px; margin-bottom: 5px; }
   .input-group { flex: 1; }
   label { font-size: 12px; color: #888; display: block; margin-bottom: 2px; }
@@ -151,6 +173,7 @@
   .btn-line-text { background-color: #06C755; grid-column: 1 / -1; font-size: 18px; }
   .btn-share-gpx { background-color: #FF9800; }
   .btn-danger { background-color: #d32f2f; color: white; width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; margin-top: 20px; }
+  .btn-debug { background-color: #78909c; font-size: 12px; padding: 8px; width: auto; display: inline-block; margin-top: 10px; }
 
   .footer-copyright { text-align: center; font-size: 11px; color: #aaa; margin-top: 20px; }
 </style>
@@ -206,7 +229,7 @@
       <button class="big-btn btn-shot" onclick="takeSnapshot()">📸 下載圖卡</button>
       <button class="big-btn btn-map" onclick="openGoogleMap('gps')">🌏 Google</button>
       <button class="big-btn btn-topo" onclick="openTopoMap('gps')">⛰️ Topo</button>
-      <button class="big-btn btn-dl" onclick="forceDownloadGPX('gps')">📥 下載 GPX</button>
+      <button class="big-btn btn-dl" onclick="forceDownloadGPX('gps')">📤 下載 GPX</button>
     </div>
   </div>
 
@@ -230,6 +253,10 @@
     <div style="margin-top:10px; display:flex; gap:10px;">
       <button class="big-btn btn-dl" onclick="exportTrackGPX()">📤 匯出/分享 GPX</button>
       <button class="big-btn" style="background:#d32f2f;" onclick="clearTrackHistory()">🗑️ 全部清除</button>
+    </div>
+    
+    <div style="text-align:center;">
+        <button class="big-btn btn-debug" onclick="runDebug()">🔍 系統檢測 (如果無法下載請點此)</button>
     </div>
     
     <div class="track-list" id="trackList">
@@ -293,7 +320,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V54 Fixed (Gray Map Fix & Silent Fallback)
+ * 全能定位轉換助手 V52 Debug & Manage
  * Copyright (c) 2026 yuushiemm
  */
 
@@ -317,9 +344,6 @@ let compassOffset = isAndroid ? 90 : 0;
 let trackHistory = JSON.parse(localStorage.getItem('track_history') || '[]');
 
 window.onload = function() {
-  // V54: 自動修復舊的時間格式
-  sanitizeTrackData();
-  
   initMap();
   startSmartLocate(); 
   
@@ -329,30 +353,6 @@ window.onload = function() {
   if (!isIOS) initCompass();
   requestAnimationFrame(animateCompass);
 };
-
-// === V54: 資料清洗 (修復 GPX 錯誤) ===
-function sanitizeTrackData() {
-  let hasFixed = false;
-  trackHistory = trackHistory.map(p => {
-    // 嘗試解析時間
-    let testDate = new Date(p.time);
-    if (isNaN(testDate.getTime())) {
-      // 如果解析失敗（例如中文格式），重設為當前時間或保留原始字串
-      // 這裡簡單處理：若無法解析，標記為需要修正，這裡直接覆寫為 ISO 格式的當前時間，確保不報錯
-      // 實際專案可能需要更複雜的解析，但在這裡為了救援功能，確保能匯出最重要
-      p.time = new Date().toISOString(); 
-      hasFixed = true;
-    } else {
-      // 確保統一存為 ISO 字串
-      p.time = testDate.toISOString();
-    }
-    return p;
-  });
-  if(hasFixed) {
-    localStorage.setItem('track_history', JSON.stringify(trackHistory));
-    console.log("Track history sanitized.");
-  }
-}
 
 // === 核心定位 ===
 function startSmartLocate() {
@@ -411,10 +411,10 @@ function handlePositionError(err) {
   runAiDiagnosis(null, err);
 }
 
-// === V54: 軌跡匯出 (ISO Time Fix + Silent Download) ===
+// === V52: 軌跡匯出與除錯 ===
 function exportTrackGPX() {
   if (!trackHistory || trackHistory.length === 0) {
-    return alert("尚無軌跡點");
+    return alert("尚未記錄到任何軌跡點。");
   }
   
   try {
@@ -426,8 +426,7 @@ function exportTrackGPX() {
     <trkseg>`;
     
     trackHistory.forEach(p => {
-      let isoTime;
-      try { isoTime = new Date(p.time).toISOString(); } catch(e) { isoTime = new Date().toISOString(); }
+      const isoTime = new Date(p.time).toISOString();
       gpxContent += `
         <trkpt lat="${p.lat}" lon="${p.lon}">
           <ele>${p.alt}</ele>
@@ -437,7 +436,7 @@ function exportTrackGPX() {
     gpxContent += `</trkseg></trk></gpx>`;
     
     const filename = `track_${timeStr.slice(0,10)}.gpx`;
-    const file = new File([gpxContent], filename, { type: 'text/xml' }); 
+    const file = new File([gpxContent], filename, { type: 'text/xml' }); // V52: Change MIME for safety
     
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       navigator.share({
@@ -449,11 +448,11 @@ function exportTrackGPX() {
       safeDownload(file);
     }
   } catch (e) {
-    alert("GPX Error: " + e.message);
+    alert("GPX 生成失敗: " + e.message);
   }
 }
 
-// 強制下載
+// V52: 單點強制下載
 function forceDownloadGPX(t) {
   const d = getSource(t);
   if(!d.lat) return alert("無座標");
@@ -463,7 +462,7 @@ function forceDownloadGPX(t) {
   safeDownload(file);
 }
 
-// 安全下載 Blob
+// V52: 安全下載 (Blob)
 function safeDownload(file) {
   try {
     const url = URL.createObjectURL(file);
@@ -475,11 +474,23 @@ function safeDownload(file) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   } catch (e) {
-    alert("下載受限");
+    alert("下載失敗 (瀏覽器限制): " + e.message);
   }
 }
 
-// 單點刪除
+// V52: 系統檢測
+function runDebug() {
+  const info = [
+    `點數: ${trackHistory.length}`,
+    `Platform: ${navigator.platform}`,
+    `Share API: ${!!navigator.share ? 'Yes' : 'No'}`,
+    `File API: ${typeof File !== 'undefined' ? 'Yes' : 'No'}`,
+    `Agent: ${navigator.userAgent.slice(0, 30)}...`
+  ].join('\n');
+  alert("系統狀態:\n" + info);
+}
+
+// V52: 單點刪除
 function deletePoint(index) {
   if (confirm("刪除此點?")) {
     trackHistory.splice(index, 1);
@@ -489,7 +500,7 @@ function deletePoint(index) {
   }
 }
 
-// === V54: 無感分享機制 (Silent Fallback) ===
+// === 分享 ===
 async function shareSafe(t, fileOnly = false) {
   const d = getSource(t);
   if (!d.lat) return alert("無座標");
@@ -520,7 +531,6 @@ async function shareSafe(t, fileOnly = false) {
       if (!fileOnly) { data.title = "位置"; data.text = text; }
       await navigator.share(data);
     } catch (err) {
-      // V54: 失敗不報錯，直接執行 Fallback
       if (err.name !== 'AbortError') fallbackShare(file, text, fileOnly);
     }
   } else {
@@ -529,27 +539,15 @@ async function shareSafe(t, fileOnly = false) {
 }
 
 function fallbackShare(file, text, fileOnly) {
-  safeDownload(file); // 1. 下載 GPX
+  safeDownload(file);
   if (!fileOnly) {
-    // 2. 0.5秒後跳轉 LINE 傳文字
     setTimeout(() => {
       window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
     }, 500);
   }
 }
 
-// === V54: 截圖 CORS Fix ===
-function takeSnapshot() {
-  if (gpsLat === 0) return;
-  const btn = document.querySelector('.btn-shot');
-  const originalText = btn.innerText;
-  btn.innerText = "截圖中...";
-  html2canvas(document.getElementById('dashboard'), { scale: 2, useCORS: true, allowTaint: true, logging: false }).then(canvas => {
-    const link = document.createElement('a'); link.download = `map_${new Date().getTime()}.png`; link.href = canvas.toDataURL(); link.click(); btn.innerText = originalText;
-  }).catch(err => { alert("截圖受限，請手動截圖"); btn.innerText = originalText; });
-}
-
-// === 日出日落 (中文) ===
+// === 日出日落 ===
 function calculateSunTimes(lat, lng) {
   const alertBox = document.getElementById('sunInfo');
   if (typeof SunCalc === 'undefined') { alertBox.innerHTML = "時間庫未載入"; return; }
@@ -608,24 +606,12 @@ function requestPermissionIOS() { if (typeof DeviceOrientationEvent !== 'undefin
 function handleOrientation(e) { let h = null; if (e.webkitCompassHeading) h = e.webkitCompassHeading; else if (e.alpha !== null) h = 360 - e.alpha; if (h !== null) targetHeading = (h + compassOffset + 360) % 360; }
 function animateCompass() { let diff = targetHeading - currentHeading; while (diff < -180) diff += 360; while (diff > 180) diff -= 360; if (Math.abs(diff) > 0.5) currentHeading += diff * 0.1; else currentHeading = targetHeading; const arrow = document.getElementById('compassArrow'); if (arrow) arrow.style.transform = `rotate(${-currentHeading}deg)`; const navArrow = document.getElementById('navArrow'); if (navArrow && navLat !== 0) { const rel = bearingToTarget - currentHeading; navArrow.style.transform = `rotate(${rel}deg)`; } requestAnimationFrame(animateCompass); }
 
-// === 分頁切換 (V54: 解決地圖灰色問題) ===
+// === 分頁切換 ===
 function switchTab(t) { 
   document.querySelectorAll('.tab-btn, .page-section').forEach(el => el.classList.remove('active')); 
-  if(t==='locate') { 
-    document.querySelectorAll('.tab-btn')[0].classList.add('active'); 
-    document.getElementById('page-locate').classList.add('active'); 
-    if(map) setTimeout(() => { map.invalidateSize(); map.setZoom(16); }, 200); 
-  } else if(t==='track') { 
-    document.querySelectorAll('.tab-btn')[1].classList.add('active'); 
-    document.getElementById('page-track').classList.add('active'); 
-    updateTrackUI(); 
-    initTrackMap(); 
-    // V54: 強制重繪軌跡地圖
-    if(trackMap) { setTimeout(() => { trackMap.invalidateSize(); if (trackHistory.length > 0) { const latlngs = trackHistory.map(p => [p.lat, p.lon]); const bounds = L.latLngBounds(latlngs); trackMap.fitBounds(bounds); } }, 200); } 
-  } else { 
-    document.querySelectorAll('.tab-btn')[2].classList.add('active'); 
-    document.getElementById('page-convert').classList.add('active'); 
-  }
+  if(t==='locate') { document.querySelectorAll('.tab-btn')[0].classList.add('active'); document.getElementById('page-locate').classList.add('active'); if(map) setTimeout(() => { map.invalidateSize(); map.setZoom(16); }, 200); } 
+  else if(t==='track') { document.querySelectorAll('.tab-btn')[1].classList.add('active'); document.getElementById('page-track').classList.add('active'); updateTrackUI(); initTrackMap(); if(trackMap) { setTimeout(() => { trackMap.invalidateSize(); if (trackHistory.length > 0) { const latlngs = trackHistory.map(p => [p.lat, p.lon]); const bounds = L.latLngBounds(latlngs); trackMap.fitBounds(bounds); setTimeout(() => trackMap.setZoom(trackMap.getZoom() - 1), 100); } }, 100); } } 
+  else { document.querySelectorAll('.tab-btn')[2].classList.add('active'); document.getElementById('page-convert').classList.add('active'); }
 }
 
 // === 轉換邏輯 ===
@@ -633,11 +619,7 @@ function convertFrom(t) { try { let lat=0,lon=0; if(t==='dd'){ lat=parseFloat(do
 function updateAllFields(lat, lon) { lat = Math.abs(lat); lon = Math.abs(lon); document.getElementById('ddN').value = formLat.toFixed(6); document.getElementById('ddE').value = formLon.toFixed(6); const dmmN_d = Math.floor(lat), dmmN_m = (lat-dmmN_d)*60; const dmmE_d = Math.floor(lon), dmmE_m = (lon-dmmE_d)*60; document.getElementById('dmmN_d').value = dmmN_d; document.getElementById('dmmN_m').value = dmmN_m.toFixed(4); document.getElementById('dmmE_d').value = dmmE_d; document.getElementById('dmmE_m').value = dmmE_m.toFixed(4); const dmsN_d = Math.floor(lat), dmsN_m_f = (lat-dmsN_d)*60, dmsN_m = Math.floor(dmsN_m_f), dmsN_s = (dmsN_m_f-dmsN_m)*60; const dmsE_d = Math.floor(lon), dmsE_m_f = (lon-dmsE_d)*60, dmsE_m = Math.floor(dmsE_m_f), dmsE_s = (dmsE_m_f-dmsE_m)*60; document.getElementById('dmsN_d').value=dmsN_d; document.getElementById('dmsN_m').value=dmsN_m; document.getElementById('dmsN_s').value=dmsN_s.toFixed(2); document.getElementById('dmsE_d').value=dmsE_d; document.getElementById('dmsE_m').value=dmsE_m; document.getElementById('dmsE_s').value=dmsE_s.toFixed(2); }
 
 // === 其他輔助 ===
-function initMap() { 
-  map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); 
-  // V54: Topo + CrossOrigin
-  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18, crossOrigin: true, attribution: 'Map data: © OSM, SRTM | Style: © OpenTopoMap' }).addTo(map); 
-}
+function initMap() { map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18, crossOrigin: true, attribution: 'Map data: © OSM, SRTM | Style: © OpenTopoMap' }).addTo(map); }
 function toggleMapLock() { const btn = document.querySelector('.map-lock-btn'); isMapLocked = !isMapLocked; if (isMapLocked) { map.dragging.disable(); map.touchZoom.disable(); btn.innerText = "🔓 解鎖地圖"; btn.style.background = "rgba(0,0,0,0.6)"; } else { map.dragging.enable(); map.touchZoom.enable(); btn.innerText = "🔒 鎖定地圖"; btn.style.background = "#E91E63"; } }
 function getDistance(lat1, lon1, lat2, lon2) { const R = 6371e3; const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180; const Δφ = (lat2-lat1) * Math.PI/180, Δλ = (lon2-lon1) * Math.PI/180; const a = Math.sin(Δφ/2)*Math.sin(Δφ/2) + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)*Math.sin(Δλ/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 function getBearing(startLat, startLng, destLat, destLng) { startLat = toRad(startLat); startLng = toRad(startLng); destLat = toRad(destLat); destLng = toRad(destLng); const y = Math.sin(destLng - startLng) * Math.cos(destLat); const x = Math.cos(startLat) * Math.sin(destLat) - Math.sin(startLat) * Math.cos(destLat) * Math.cos(destLng - startLng); return (toDeg(Math.atan2(y, x)) + 360) % 360; }
@@ -647,13 +629,14 @@ function getCardinal(angle) { const d=['北','東北','東','東南','南','西�
 function ddToDms(lat, lon) { const toDms = (val, isLat) => { const dir = val >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W'); val = Math.abs(val); const d = Math.floor(val); const m = Math.floor((val - d) * 60); const s = ((val - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}"${dir}`; }; return `${toDms(lat, true)}, ${toDms(lon, false)}`; }
 function openGoogleMap(t) { const d=getSource(t); if(d.lat) window.open(`https://www.google.com/maps?q=${d.lat},${d.lon}`); }
 function openTopoMap(t) { const d=getSource(t); if(d.lat) window.open(`https://opentopomap.org/#marker=15/${d.lat}/${d.lon}`); }
-function saveTrackPoint(lat, lon, alt, acc) { if(trackHistory.length>0 && getDistance(trackHistory[trackHistory.length-1].lat, trackHistory[trackHistory.length-1].lon, lat, lon)<15)return; trackHistory.push({lat,lon,alt,acc,time:new Date().toISOString()}); localStorage.setItem('track_history', JSON.stringify(trackHistory)); }
-function updateTrackUI() { const l=document.getElementById('trackList'); l.innerHTML=''; const s=Math.min(trackHistory.length,50); for(let i=trackHistory.length-1;i>=trackHistory.length-s;i--){const p=trackHistory[i]; let dt; try{dt=new Date(p.time).toLocaleString();}catch{dt="時間錯誤";} const d=document.createElement('div'); d.className='track-item'; d.innerHTML=`<div class="track-info"><div class="track-time">${dt}</div><div class="track-coord">${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</div></div><div class="track-actions"><button class="btn-nav-to" onclick="setNavTarget(${p.lat},${p.lon})">導航</button><button class="btn-del-point" onclick="deletePoint(${i})">✕</button></div>`; l.appendChild(d);} }
+function takeSnapshot() { if(gpsLat===0)return; const b=document.querySelector('.btn-shot'); const o=b.innerText; b.innerText="截圖中..."; html2canvas(document.getElementById('dashboard'),{scale:2,useCORS:true}).then(c=>{const a=document.createElement('a');a.download=`map_${new Date().getTime()}.png`;a.href=c.toDataURL();a.click();b.innerText=o;}).catch(e=>{alert("截圖失敗");b.innerText=o;}); }
+async function fetchWeather(lat,lon) { try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const d=await r.json(); globalInfo.weather=`天氣: ${d.current_weather.temperature}°C`; document.getElementById('weatherVal').innerText=globalInfo.weather; globalInfo.wind=`風速: ${d.current_weather.windspeed}`; document.getElementById('windVal').innerText=globalInfo.wind; }catch(e){} }
+function openInBrowser() { const u=window.location.href; window.location.href=u+(u.indexOf("?")>-1?"&":"?")+"openExternalBrowser=1"; }
+function saveTrackPoint(lat, lon, alt, acc) { if(trackHistory.length>0 && getDistance(trackHistory[trackHistory.length-1].lat, trackHistory[trackHistory.length-1].lon, lat, lon)<15)return; trackHistory.push({lat,lon,alt,acc,time:new Date().toLocaleString()}); localStorage.setItem('track_history', JSON.stringify(trackHistory)); }
+function updateTrackUI() { const l=document.getElementById('trackList'); l.innerHTML=''; const s=Math.min(trackHistory.length,50); for(let i=trackHistory.length-1;i>=trackHistory.length-s;i--){const p=trackHistory[i]; const d=document.createElement('div'); d.className='track-item'; d.innerHTML=`<div class="track-info"><div class="track-time">${p.time}</div><div class="track-coord">${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</div></div><div class="track-actions"><button class="btn-nav-to" onclick="setNavTarget(${p.lat},${p.lon})">導航</button><button class="btn-del-point" onclick="deletePoint(${i})">✕</button></div>`; l.appendChild(d);} }
 function initTrackMap() { if(trackMap)trackMap.remove(); trackMap=L.map('trackMap',{zoomControl:false}).setView([23.6,120.9],7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(trackMap); if(trackHistory.length>0){const ll=trackHistory.map(p=>[p.lat,p.lon]); L.polyline(ll,{color:'red'}).addTo(trackMap); trackMap.fitBounds(ll);} }
 function clearTrackHistory() { if(confirm("清除?")){trackHistory=[];localStorage.removeItem('track_history'); updateTrackUI(); initTrackMap(); closeNav();} }
 function getSource(t) { return t==='gps'?{lat:gpsLat,lon:gpsLon,accStr:globalInfo.acc,altStr:globalInfo.alt}:(t==='form'?{lat:formLat,lon:formLon}:{}); }
-async function fetchWeather(lat,lon) { try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const d=await r.json(); globalInfo.weather=`天氣: ${d.current_weather.temperature}°C`; document.getElementById('weatherVal').innerText=globalInfo.weather; globalInfo.wind=`風速: ${d.current_weather.windspeed}`; document.getElementById('windVal').innerText=globalInfo.wind; }catch(e){} }
-function openInBrowser() { const u=window.location.href; window.location.href=u+(u.indexOf("?")>-1?"&":"?")+"openExternalBrowser=1"; }
 </script>
 </body>
 </html>
