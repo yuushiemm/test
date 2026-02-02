@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="author" content="yuushiemm">
-<title>全能定位轉換助手 V55 Map-Fix @yuushiemm</title>
+<title>全能定位轉換助手 V56 Final @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -17,19 +17,17 @@
     font-family: -apple-system, "Microsoft JhengHei", sans-serif; 
     padding: 0; background: #f4f6f8; color: #333; margin: 0; 
     padding-bottom: calc(80px + env(safe-area-inset-bottom)); 
-    overflow-x: hidden;
-    -webkit-text-size-adjust: 100%;
+    overflow-x: hidden; -webkit-text-size-adjust: 100%;
   }
   .container { max-width: 600px; margin: 0 auto; padding-top: 5px; position: relative; min-height: 100vh; }
   
-  /* === 底部導航列 === */
+  /* === 底部導航 === */
   .tab-nav { 
     display: flex; position: fixed; bottom: 0; left: 0; right: 0; 
     z-index: 9999; background: white; 
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1); 
     padding-bottom: env(safe-area-inset-bottom);
-    height: 55px;
-    max-width: 600px; margin: 0 auto;
+    height: 55px; max-width: 600px; margin: 0 auto;
   }
   .tab-btn { 
     flex: 1; display: flex; justify-content: center; align-items: center;
@@ -38,9 +36,9 @@
   }
   .tab-btn.active { color: #1e3c72; border-top-color: #1e3c72; background: #fbfdff; }
   
-  .page-section { display: none; padding: 10px; }
-  .page-section.active { display: block; animation: fadeIn 0.3s; }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .page-section { display: none; padding: 10px; animation: fadeIn 0.3s; }
+  .page-section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
   /* === Top Controls === */
   .top-controls { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -56,34 +54,29 @@
   .compass-container { 
     width: 45px; height: 45px; background: white; border-radius: 50%; 
     display: flex; justify-content: center; align-items: center; 
-    border: 2px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-    cursor: pointer; 
+    border: 2px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; 
   }
   .compass-arrow { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 28px solid #ff5252; transform-origin: center bottom; position: relative; top: -10px; transition: transform 0.15s linear; }
   .compass-arrow::after { content: 'N'; position: absolute; top: 30px; left: -4px; color: #555; font-size: 9px; font-weight: bold; }
   .compass-hint { position: absolute; bottom: -16px; width: 150%; left: -25%; text-align: center; font-size: 9px; color: #888; display: none; }
   .ios-mode .compass-hint { display: block; }
 
-  /* 主要按鈕 */
+  /* 按鈕 */
   .btn-step2 { 
     width: 100%; padding: 15px; border: none; border-radius: 10px; 
     font-size: 18px; font-weight: bold; color: white; cursor: pointer; 
     background-color: #06C755; 
     box-shadow: 0 3px 10px rgba(6, 199, 85, 0.3); 
-    display: flex; align-items: center; justify-content: center; 
-    margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
   }
 
-  /* AI 診斷框 */
+  /* 提示框 */
   #aiHintBox { 
     display: block; margin-bottom: 10px; padding: 10px; 
     border-radius: 8px; font-weight: bold; text-align: center; 
     font-size: 16px; line-height: 1.4; 
-    border: 1px solid #ddd; background: #fff; 
-    transition: all 0.3s;
+    border: 1px solid #ddd; background: #fff; transition: all 0.3s;
   }
-
-  /* 權限教學 */
   #permGuide { display: none; background: #ffebee; border: 1px solid #ffcdd2; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
   .perm-btn { background: #d32f2f; color: white; padding: 8px 16px; border-radius: 20px; margin-top: 8px; display: inline-block; font-weight: bold; font-size: 14px; }
 
@@ -93,12 +86,9 @@
     color: white; padding: 12px; border-radius: 12px; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-bottom: 15px; 
   }
-  
-  /* V55: 地圖容器強制設定 */
   #map { 
-    height: 200px; width: 100%; border-radius: 8px; margin-top: 8px; 
+    height: 180px; width: 100%; border-radius: 8px; margin-top: 8px; 
     border: 1px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; 
-    display: block; /* 確保不消失 */
   }
   .map-lock-btn { 
     position: absolute; bottom: 8px; right: 8px; 
@@ -117,28 +107,16 @@
   #sunInfo { 
     margin-top: 5px; font-size: 15px; font-weight: normal; 
     padding: 4px 12px; border-radius: 12px; 
-    background: rgba(255,255,255,0.15); 
-    display: inline-block;
-    white-space: nowrap;
+    background: rgba(255,255,255,0.15); display: inline-block; white-space: nowrap;
   }
 
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
-  .info-item { 
-    background: rgba(255,255,255,0.15); padding: 6px 4px; border-radius: 6px; 
-    display: flex; justify-content: center; align-items: center; min-height: 40px; 
-  }
-  .info-value { 
-    font-size: 16px; font-weight: bold; width: 100%; text-align: center; 
-    white-space: normal; word-break: break-word; line-height: 1.2; 
-  }
+  .info-item { background: rgba(255,255,255,0.15); padding: 6px 4px; border-radius: 6px; display: flex; justify-content: center; align-items: center; min-height: 40px; }
+  .info-value { font-size: 16px; font-weight: bold; width: 100%; text-align: center; white-space: normal; word-break: break-word; line-height: 1.2; }
 
   /* 按鈕群 */
   .secondary-action-area { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-  .big-btn { 
-    padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; 
-    color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; 
-    width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-  }
+  .big-btn { padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
   .btn-shot { background-color: #E91E63; }
   .btn-refresh { background-color: #795548; }
   .btn-map { background-color: #4285F4; }
@@ -146,7 +124,7 @@
   .btn-dl { background-color: #607d8b; }
   
   /* Page 2: 軌跡 */
-  #trackMap { height: 280px; width: 100%; border-radius: 8px; border: 2px solid #ddd; z-index: 1; background: #eee; }
+  #trackMap { height: 250px; width: 100%; border-radius: 8px; border: 2px solid #ddd; z-index: 1; background: #eee; }
   .track-list { margin-top: 10px; max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #eee; }
   .track-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
   .track-info { font-size: 13px; line-height: 1.3; }
@@ -163,7 +141,6 @@
   .card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
   .card-tag { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 4px; color: #666; font-weight: normal; margin-left: auto; }
   .coord-hint { font-size: 12px; color: #E65100; font-weight: bold; margin-right: 5px; }
-  
   .input-row { display: flex; gap: 5px; margin-bottom: 5px; }
   .input-group { flex: 1; }
   label { font-size: 12px; color: #888; display: block; margin-bottom: 2px; }
@@ -316,7 +293,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V55 Map-Fix (Fix Gray Tiles & Track Render)
+ * 全能定位轉換助手 V56 Final (Zoom Fix)
  * Copyright (c) 2026 yuushiemm
  */
 
@@ -340,9 +317,9 @@ let compassOffset = isAndroid ? 90 : 0;
 let trackHistory = JSON.parse(localStorage.getItem('track_history') || '[]');
 
 window.onload = function() {
-  sanitizeTrackData(); // 修復舊時間格式
-  initMap(); // 初始化主地圖
-  initTrackMap(); // 初始化軌跡地圖 (V55: 一開始就初始化)
+  sanitizeTrackData();
+  initMap(); 
+  initTrackMap(); 
   
   startSmartLocate(); 
   
@@ -426,49 +403,39 @@ function handlePositionError(err) {
   runAiDiagnosis(null, err);
 }
 
-// === V55: 關鍵修復 - 切換分頁時強制喚醒地圖 ===
+// === V55: 切換分頁 (強制喚醒地圖 + 縮放限制) ===
 function switchTab(t) { 
   document.querySelectorAll('.tab-btn, .page-section').forEach(el => el.classList.remove('active')); 
-  
   if(t==='locate') { 
     document.querySelectorAll('.tab-btn')[0].classList.add('active'); 
     document.getElementById('page-locate').classList.add('active'); 
-    // 強制重繪主地圖
-    if(map) {
-      setTimeout(() => { 
-        map.invalidateSize(); 
-      }, 200); 
-    }
+    if(map) setTimeout(() => { map.invalidateSize(); map.setZoom(16); }, 200); 
   } else if(t==='track') { 
     document.querySelectorAll('.tab-btn')[1].classList.add('active'); 
     document.getElementById('page-track').classList.add('active'); 
-    
-    // 更新列表
     updateTrackUI(); 
+    initTrackMap(); 
     
-    // V55: 強制重繪軌跡地圖 (解決灰色問題)
+    // 強制重繪軌跡地圖
     if(trackMap) { 
       setTimeout(() => { 
         trackMap.invalidateSize(); 
-        
-        // 確保重繪後再把線畫上去
-        if (trackHistory.length > 0) {
-           // 清除舊圖層
+        if (trackHistory.length > 0) { 
+           // 清除並重繪
            trackMap.eachLayer((layer) => {
              if (layer instanceof L.Polyline || layer instanceof L.CircleMarker) {
                trackMap.removeLayer(layer);
              }
            });
-           // 重畫
            const latlngs = trackHistory.map(p => [p.lat, p.lon]);
            L.polyline(latlngs, {color: 'red', weight: 4}).addTo(trackMap);
            L.circleMarker(latlngs[0], {color: 'green', radius: 6}).addTo(trackMap).bindPopup("起點");
            L.circleMarker(latlngs[latlngs.length-1], {color: 'blue', radius: 6}).addTo(trackMap).bindPopup("最新");
            
-           // 縮放 (V55 Fix: 確保 bounds 正確)
+           // V56 Fix: 限制最大縮放，避免進入無圖層的虛空
            const bounds = L.latLngBounds(latlngs);
-           trackMap.fitBounds(bounds, {padding: [20, 20]});
-        }
+           trackMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+        } 
       }, 200); 
     } 
   } else { 
@@ -477,201 +444,6 @@ function switchTab(t) {
   }
 }
 
-// === V54: 軌跡匯出 (ISO Time Fix + Silent Download) ===
-function exportTrackGPX() {
-  if (!trackHistory || trackHistory.length === 0) {
-    return alert("尚無軌跡點");
-  }
-  
-  try {
-    const timeStr = new Date().toISOString();
-    let gpxContent = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<gpx version="1.1" creator="YuushiemmTool">
-  <trk>
-    <name>Track ${new Date().toLocaleTimeString()}</name>
-    <trkseg>`;
-    
-    trackHistory.forEach(p => {
-      let isoTime;
-      try { isoTime = new Date(p.time).toISOString(); } catch(e) { isoTime = new Date().toISOString(); }
-      gpxContent += `
-        <trkpt lat="${p.lat}" lon="${p.lon}">
-          <ele>${p.alt}</ele>
-          <time>${isoTime}</time>
-        </trkpt>`;
-    });
-    gpxContent += `</trkseg></trk></gpx>`;
-    
-    const filename = `track_${timeStr.slice(0,10)}.gpx`;
-    const file = new File([gpxContent], filename, { type: 'text/xml' }); 
-    
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({
-        files: [file], title: "軌跡匯出", text: "我的軌跡"
-      }).catch(err => {
-        if(err.name !== 'AbortError') safeDownload(file);
-      });
-    } else {
-      safeDownload(file);
-    }
-  } catch (e) {
-    alert("GPX Error: " + e.message);
-  }
-}
-
-// 強制下載
-function forceDownloadGPX(t) {
-  const d = getSource(t);
-  if(!d.lat) return alert("無座標");
-  const time = new Date().toISOString();
-  const content = `<?xml version="1.0"?><gpx version="1.1"><wpt lat="${d.lat}" lon="${d.lon}"><time>${time}</time><name>Point</name></wpt></gpx>`;
-  const file = new File([content], "point.gpx", {type: "text/xml"});
-  safeDownload(file);
-}
-
-// 安全下載 Blob
-function safeDownload(file) {
-  try {
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (e) {
-    alert("下載受限");
-  }
-}
-
-// 單點刪除
-function deletePoint(index) {
-  if (confirm("刪除此點?")) {
-    trackHistory.splice(index, 1);
-    localStorage.setItem('track_history', JSON.stringify(trackHistory));
-    switchTab('track'); // 觸發重繪
-  }
-}
-
-// === V54: 無感分享機制 (Silent Fallback) ===
-async function shareSafe(t, fileOnly = false) {
-  const d = getSource(t);
-  if (!d.lat) return alert("無座標");
-
-  const dms = ddToDms(d.lat, d.lon);
-  const topoUrl = `https://opentopomap.org/#marker=16/${d.lat}/${d.lon}`;
-  const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`;
-  
-  let text = `📍 位置分享\n──────────────\n`;
-  text += `經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n`;
-  text += `度分秒: ${dms}\n`;
-  if (t === 'gps') {
-    let weatherStr = globalInfo.weather.replace('天氣:', '').trim();
-    let windStr = globalInfo.wind.replace('風速:', '').trim();
-    text += `精度: ${d.accStr}\n海拔: ${d.altStr}\n`;
-    text += `天氣: ${weatherStr} | 風速: ${windStr}\n`;
-    text += `${sunInfoText}\n`;
-  }
-  text += `──────────────\n⛰️ Topo: ${topoUrl}\n\n🌏 Google: ${gmapUrl}`;
-
-  const time = new Date().toISOString();
-  const content = `<?xml version="1.0"?><gpx version="1.1"><wpt lat="${d.lat}" lon="${d.lon}"><time>${time}</time><name>Point</name></wpt></gpx>`;
-  const file = new File([content], `point.gpx`, { type: 'text/xml' });
-
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-    try {
-      let data = { files: [file] };
-      if (!fileOnly) { data.title = "位置"; data.text = text; }
-      await navigator.share(data);
-    } catch (err) {
-      if (err.name !== 'AbortError') fallbackShare(file, text, fileOnly);
-    }
-  } else {
-    fallbackShare(file, text, fileOnly);
-  }
-}
-
-function fallbackShare(file, text, fileOnly) {
-  safeDownload(file); // 1. 下載 GPX
-  if (!fileOnly) {
-    // 2. 0.5秒後跳轉 LINE 傳文字
-    setTimeout(() => {
-      window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
-    }, 500);
-  }
-}
-
-// === V54: 截圖 CORS Fix ===
-function takeSnapshot() {
-  if (gpsLat === 0) return;
-  const btn = document.querySelector('.btn-shot');
-  const originalText = btn.innerText;
-  btn.innerText = "截圖中...";
-  html2canvas(document.getElementById('dashboard'), { scale: 2, useCORS: true, allowTaint: true, logging: false }).then(canvas => {
-    const link = document.createElement('a'); link.download = `map_${new Date().getTime()}.png`; link.href = canvas.toDataURL(); link.click(); btn.innerText = originalText;
-  }).catch(err => { alert("截圖受限，請手動截圖"); btn.innerText = originalText; });
-}
-
-// === 日出日落 (中文) ===
-function calculateSunTimes(lat, lng) {
-  const alertBox = document.getElementById('sunInfo');
-  if (typeof SunCalc === 'undefined') { alertBox.innerHTML = "時間庫未載入"; return; }
-  const now = new Date();
-  const times = SunCalc.getTimes(now, lat, lng); 
-  const sunriseStr = times.sunrise.toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit', hour12: false});
-  const sunsetStr = times.sunset.toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit', hour12: false});
-  sunInfoText = `日出: ${sunriseStr} | 日落: ${sunsetStr}`; 
-  alertBox.style.display = 'inline-block';
-  alertBox.innerHTML = `日出 ${sunriseStr} | 日落 ${sunsetStr}`;
-  if (now < times.sunrise || now > times.sunset) {
-    alertBox.style.background = "#37474f"; alertBox.style.color = "#cfd8dc"; 
-  } else {
-    alertBox.style.background = "rgba(255,255,255,0.2)"; alertBox.style.color = "#333"; 
-  }
-}
-
-// === AI 診斷 ===
-async function runAiDiagnosis(p, error) {
-  const aiBox = document.getElementById('aiHintBox');
-  const browserBtn = document.getElementById('browserBtn');
-  const shareBtn = document.getElementById('shareBtn');
-  const permGuide = document.getElementById('permGuide');
-  const isLine = /Line/i.test(navigator.userAgent);
-
-  if (error) {
-    if (isLine) {
-      aiBox.innerHTML = `⚠️ <b>LINE 無法開啟定位</b><br>👇 <b>請按【瀏覽器開啟】</b>`;
-      aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
-      browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
-      document.getElementById('dashboard').style.opacity = '0.5';
-    } else {
-      if (error.code === 1) { permGuide.style.display = 'block'; aiBox.style.display = 'none'; document.getElementById('dashboard').style.opacity = '0.5'; }
-      else { aiBox.innerHTML = `⚠️ 定位錯誤`; aiBox.style.borderColor = "orange"; aiBox.style.background = "#fff3e0"; }
-    }
-    return;
-  }
-  permGuide.style.display = 'none'; aiBox.style.display = 'block'; document.getElementById('dashboard').style.opacity = '1';
-  const acc = Math.round(p.accuracy);
-  browserBtn.classList.remove('urgent'); shareBtn.classList.remove('dimmed');
-
-  if (isDesktop) { aiBox.innerHTML = `💻 <b>電腦版 (精度 ±${acc}m)</b><br>✅ 定位成功`; aiBox.style.borderColor = "#2196f3"; aiBox.style.background = "#e3f2fd"; aiBox.style.color = "#0d47a1"; return; }
-  if (acc <= 30) { aiBox.innerHTML = `✅ 訊號穩定 (±${acc}m)<br>👆 <b>請按上方【分享】</b>`; aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32"; }
-  else {
-    if (isLine) { aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議按【瀏覽器開啟】</b>`; aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315"; browserBtn.classList.add('urgent'); }
-    else { let advice = "修正飄移中..."; if (window.ai) { try { const s = await window.ai.createTextSession(); advice = await s.prompt("GPS誤差"+acc+"米，安撫長輩說AI正在修正訊號，請稍等或先分享。10字內。"); } catch(e){} } aiBox.innerHTML = `📡 訊號鎖定中... (±${acc}m)<br>${advice}<br>或者 👆 <b>先按上方【分享】</b>`; aiBox.style.borderColor = "#ff9800"; aiBox.style.background = "#fff3e0"; aiBox.style.color = "#ef6c00"; }
-  }
-}
-
-// === 導航與羅盤 ===
-function setNavTarget(lat, lon) { navLat = lat; navLon = lon; document.getElementById('navPanel').style.display = 'block'; updateNavDisplay(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-function closeNav() { navLat = 0; navLon = 0; document.getElementById('navPanel').style.display = 'none'; }
-function updateNavDisplay() { if (navLat === 0 || gpsLat === 0) return; const dist = getDistance(gpsLat, gpsLon, navLat, navLon); bearingToTarget = getBearing(gpsLat, gpsLon, navLat, navLon); document.getElementById('navDistance').innerText = dist < 1000 ? `${Math.round(dist)} m` : `${(dist/1000).toFixed(2)} km`; document.getElementById('navBearing').innerText = `方位: ${Math.round(bearingToTarget)}°`; }
-function initCompass() { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') window.addEventListener('deviceorientation', handleOrientation); }
-function requestPermissionIOS() { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') { window.addEventListener('deviceorientation', handleOrientation); alert("羅盤已啟用"); } }).catch(console.error); } }
-function handleOrientation(e) { let h = null; if (e.webkitCompassHeading) h = e.webkitCompassHeading; else if (e.alpha !== null) h = 360 - e.alpha; if (h !== null) targetHeading = (h + compassOffset + 360) % 360; }
-function animateCompass() { let diff = targetHeading - currentHeading; while (diff < -180) diff += 360; while (diff > 180) diff -= 360; if (Math.abs(diff) > 0.5) currentHeading += diff * 0.1; else currentHeading = targetHeading; const arrow = document.getElementById('compassArrow'); if (arrow) arrow.style.transform = `rotate(${-currentHeading}deg)`; const navArrow = document.getElementById('navArrow'); if (navArrow && navLat !== 0) { const rel = bearingToTarget - currentHeading; navArrow.style.transform = `rotate(${rel}deg)`; } requestAnimationFrame(animateCompass); }
-
 // === 轉換邏輯 ===
 function convertFrom(t) { try { let lat=0,lon=0; if(t==='dd'){ lat=parseFloat(document.getElementById('ddN').value); lon=parseFloat(document.getElementById('ddE').value); } else if(t==='dms'){ lat=parseFloat(document.getElementById('dmsN_d').value||0)+parseFloat(document.getElementById('dmsN_m').value||0)/60+parseFloat(document.getElementById('dmsN_s').value||0)/3600; lon=parseFloat(document.getElementById('dmsE_d').value||0)+parseFloat(document.getElementById('dmsE_m').value||0)/60+parseFloat(document.getElementById('dmsE_s').value||0)/3600; } else if(t==='dmm'){ lat=parseFloat(document.getElementById('dmmN_d').value||0)+parseFloat(document.getElementById('dmmN_m').value||0)/60; lon=parseFloat(document.getElementById('dmmE_d').value||0)+parseFloat(document.getElementById('dmmE_m').value||0)/60; } if(isNaN(lat)||isNaN(lon)) throw Error; formLat=lat; formLon=lon; updateAllFields(lat,lon); alert("轉換成功！"); } catch(e) { alert("數值錯誤"); } }
 function updateAllFields(lat, lon) { lat = Math.abs(lat); lon = Math.abs(lon); document.getElementById('ddN').value = formLat.toFixed(6); document.getElementById('ddE').value = formLon.toFixed(6); const dmmN_d = Math.floor(lat), dmmN_m = (lat-dmmN_d)*60; const dmmE_d = Math.floor(lon), dmmE_m = (lon-dmmE_d)*60; document.getElementById('dmmN_d').value = dmmN_d; document.getElementById('dmmN_m').value = dmmN_m.toFixed(4); document.getElementById('dmmE_d').value = dmmE_d; document.getElementById('dmmE_m').value = dmmE_m.toFixed(4); const dmsN_d = Math.floor(lat), dmsN_m_f = (lat-dmsN_d)*60, dmsN_m = Math.floor(dmsN_m_f), dmsN_s = (dmsN_m_f-dmsN_m)*60; const dmsE_d = Math.floor(lon), dmsE_m_f = (lon-dmsE_d)*60, dmsE_m = Math.floor(dmsE_m_f), dmsE_s = (dmsE_m_f-dmsE_m)*60; document.getElementById('dmsN_d').value=dmsN_d; document.getElementById('dmsN_m').value=dmsN_m; document.getElementById('dmsN_s').value=dmsN_s.toFixed(2); document.getElementById('dmsE_d').value=dmsE_d; document.getElementById('dmsE_m').value=dmsE_m; document.getElementById('dmsE_s').value=dmsE_s.toFixed(2); }
@@ -679,10 +451,9 @@ function updateAllFields(lat, lon) { lat = Math.abs(lat); lon = Math.abs(lon); d
 // === 其他輔助 ===
 function initMap() { 
   map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); 
-  // V55: Topo + CrossOrigin + MaxZoom 18
   L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18, crossOrigin: true, attribution: 'Map data: © OSM, SRTM | Style: © OpenTopoMap' }).addTo(map); 
 }
-// V55: 軌跡地圖初始化 (獨立函式)
+// V55: 軌跡地圖初始化
 function initTrackMap() { 
   if(trackMap) trackMap.remove(); 
   trackMap = L.map('trackMap', {zoomControl: false}).setView([23.6, 120.9], 7); 
@@ -704,6 +475,49 @@ function clearTrackHistory() { if(confirm("清除?")){trackHistory=[];localStora
 function getSource(t) { return t==='gps'?{lat:gpsLat,lon:gpsLon,accStr:globalInfo.acc,altStr:globalInfo.alt}:(t==='form'?{lat:formLat,lon:formLon}:{}); }
 async function fetchWeather(lat,lon) { try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const d=await r.json(); globalInfo.weather=`天氣: ${d.current_weather.temperature}°C`; document.getElementById('weatherVal').innerText=globalInfo.weather; globalInfo.wind=`風速: ${d.current_weather.windspeed}`; document.getElementById('windVal').innerText=globalInfo.wind; }catch(e){} }
 function openInBrowser() { const u=window.location.href; window.location.href=u+(u.indexOf("?")>-1?"&":"?")+"openExternalBrowser=1"; }
+
+// === V54: 軌跡匯出 ===
+function exportTrackGPX() {
+  if (!trackHistory || trackHistory.length === 0) return alert("尚無軌跡點");
+  try {
+    const timeStr = new Date().toISOString();
+    let gpxContent = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?><gpx version="1.1" creator="YuushiemmTool"><trk><name>Track ${new Date().toLocaleTimeString()}</name><trkseg>`;
+    trackHistory.forEach(p => {
+      let isoTime; try { isoTime = new Date(p.time).toISOString(); } catch(e) { isoTime = new Date().toISOString(); }
+      gpxContent += `<trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.alt}</ele><time>${isoTime}</time></trkpt>`;
+    });
+    gpxContent += `</trkseg></trk></gpx>`;
+    const filename = `track_${timeStr.slice(0,10)}.gpx`;
+    const file = new File([gpxContent], filename, { type: 'text/xml' }); 
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: "軌跡匯出", text: "我的軌跡" }).catch(err => { if(err.name !== 'AbortError') safeDownload(file); });
+    } else { safeDownload(file); }
+  } catch (e) { alert("GPX Error: " + e.message); }
+}
+function forceDownloadGPX(t) { const d = getSource(t); if(!d.lat) return alert("無座標"); const time = new Date().toISOString(); const content = `<?xml version="1.0"?><gpx version="1.1"><wpt lat="${d.lat}" lon="${d.lon}"><time>${time}</time><name>Point</name></wpt></gpx>`; const file = new File([content], "point.gpx", {type: "text/xml"}); safeDownload(file); }
+function safeDownload(file) { try { const url = URL.createObjectURL(file); const a = document.createElement("a"); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } catch (e) { alert("下載受限"); } }
+function deletePoint(index) { if (confirm("刪除此點?")) { trackHistory.splice(index, 1); localStorage.setItem('track_history', JSON.stringify(trackHistory)); switchTab('track'); } }
+async function shareSafe(t, fileOnly = false) {
+  const d = getSource(t); if (!d.lat) return alert("無座標");
+  const dms = ddToDms(d.lat, d.lon); const topoUrl = `https://opentopomap.org/#marker=16/${d.lat}/${d.lon}`; const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`;
+  let text = `📍 位置分享\n──────────────\n經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n度分秒: ${dms}\n`;
+  if (t === 'gps') { let weatherStr = globalInfo.weather.replace('天氣:', '').trim(); let windStr = globalInfo.wind.replace('風速:', '').trim(); text += `精度: ${d.accStr}\n海拔: ${d.altStr}\n天氣: ${weatherStr} | 風速: ${windStr}\n${sunInfoText}\n`; }
+  text += `──────────────\n⛰️ Topo: ${topoUrl}\n\n🌏 Google: ${gmapUrl}`;
+  const time = new Date().toISOString(); const content = `<?xml version="1.0"?><gpx version="1.1"><wpt lat="${d.lat}" lon="${d.lon}"><time>${time}</time><name>Point</name></wpt></gpx>`;
+  const file = new File([content], `point.gpx`, { type: 'text/xml' });
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) { try { let data = { files: [file] }; if (!fileOnly) { data.title = "位置"; data.text = text; } await navigator.share(data); } catch (err) { if (err.name !== 'AbortError') fallbackShare(file, text, fileOnly); } } else { fallbackShare(file, text, fileOnly); }
+}
+function fallbackShare(file, text, fileOnly) { safeDownload(file); if (!fileOnly) { setTimeout(() => { window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`; }, 500); } }
+function takeSnapshot() { if(gpsLat===0)return; const btn = document.querySelector('.btn-shot'); const originalText = btn.innerText; btn.innerText = "截圖中..."; html2canvas(document.getElementById('dashboard'), { scale: 2, useCORS: true, allowTaint: true, logging: false }).then(canvas => { const link = document.createElement('a'); link.download = `map_${new Date().getTime()}.png`; link.href = canvas.toDataURL(); link.click(); btn.innerText = originalText; }).catch(err => { alert("截圖受限，請手動截圖"); btn.innerText = originalText; }); }
+function calculateSunTimes(lat, lng) { const alertBox = document.getElementById('sunInfo'); if (typeof SunCalc === 'undefined') { alertBox.innerHTML = "時間庫未載入"; return; } const now = new Date(); const times = SunCalc.getTimes(now, lat, lng); const sunriseStr = times.sunrise.toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit', hour12: false}); const sunsetStr = times.sunset.toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit', hour12: false}); sunInfoText = `日出: ${sunriseStr} | 日落: ${sunsetStr}`; alertBox.style.display = 'inline-block'; alertBox.innerHTML = `日出 ${sunriseStr} | 日落 ${sunsetStr}`; if (now < times.sunrise || now > times.sunset) { alertBox.style.background = "#37474f"; alertBox.style.color = "#cfd8dc"; } else { alertBox.style.background = "rgba(255,255,255,0.2)"; alertBox.style.color = "#333"; } }
+async function runAiDiagnosis(p, error) { const aiBox = document.getElementById('aiHintBox'); const browserBtn = document.getElementById('browserBtn'); const shareBtn = document.getElementById('shareBtn'); const permGuide = document.getElementById('permGuide'); const isLine = /Line/i.test(navigator.userAgent); if (error) { if (isLine) { aiBox.innerHTML = `⚠️ <b>LINE 無法開啟定位</b><br>👇 <b>請按【瀏覽器開啟】</b>`; aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315"; browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed'); document.getElementById('dashboard').style.opacity = '0.5'; } else { if (error.code === 1) { permGuide.style.display = 'block'; aiBox.style.display = 'none'; document.getElementById('dashboard').style.opacity = '0.5'; } else { aiBox.innerHTML = `⚠️ 定位錯誤`; aiBox.style.borderColor = "orange"; aiBox.style.background = "#fff3e0"; } } return; } permGuide.style.display = 'none'; aiBox.style.display = 'block'; document.getElementById('dashboard').style.opacity = '1'; const acc = Math.round(p.accuracy); browserBtn.classList.remove('urgent'); shareBtn.classList.remove('dimmed'); if (isDesktop) { aiBox.innerHTML = `💻 <b>電腦版 (精度 ±${acc}m)</b><br>✅ 定位成功`; aiBox.style.borderColor = "#2196f3"; aiBox.style.background = "#e3f2fd"; aiBox.style.color = "#0d47a1"; return; } if (acc <= 30) { aiBox.innerHTML = `✅ 訊號穩定 (±${acc}m)<br>👆 <b>請按上方【分享】</b>`; aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32"; } else { if (isLine) { aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議按【瀏覽器開啟】</b>`; aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315"; browserBtn.classList.add('urgent'); } else { let advice = "修正飄移中..."; if (window.ai) { try { const s = await window.ai.createTextSession(); advice = await s.prompt("GPS誤差"+acc+"米，安撫長輩說AI正在修正訊號，請稍等或先分享。10字內。"); } catch(e){} } aiBox.innerHTML = `📡 訊號鎖定中... (±${acc}m)<br>${advice}<br>或者 👆 <b>先按上方【分享】</b>`; aiBox.style.borderColor = "#ff9800"; aiBox.style.background = "#fff3e0"; aiBox.style.color = "#ef6c00"; } } }
+function setNavTarget(lat, lon) { navLat = lat; navLon = lon; document.getElementById('navPanel').style.display = 'block'; updateNavDisplay(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function closeNav() { navLat = 0; navLon = 0; document.getElementById('navPanel').style.display = 'none'; }
+function updateNavDisplay() { if (navLat === 0 || gpsLat === 0) return; const dist = getDistance(gpsLat, gpsLon, navLat, navLon); bearingToTarget = getBearing(gpsLat, gpsLon, navLat, navLon); document.getElementById('navDistance').innerText = dist < 1000 ? `${Math.round(dist)} m` : `${(dist/1000).toFixed(2)} km`; document.getElementById('navBearing').innerText = `方位: ${Math.round(bearingToTarget)}°`; }
+function initCompass() { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') window.addEventListener('deviceorientation', handleOrientation); }
+function requestPermissionIOS() { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') { window.addEventListener('deviceorientation', handleOrientation); alert("羅盤已啟用"); } }).catch(console.error); } }
+function handleOrientation(e) { let h = null; if (e.webkitCompassHeading) h = e.webkitCompassHeading; else if (e.alpha !== null) h = 360 - e.alpha; if (h !== null) targetHeading = (h + compassOffset + 360) % 360; }
+function animateCompass() { let diff = targetHeading - currentHeading; while (diff < -180) diff += 360; while (diff > 180) diff -= 360; if (Math.abs(diff) > 0.5) currentHeading += diff * 0.1; else currentHeading = targetHeading; const arrow = document.getElementById('compassArrow'); if (arrow) arrow.style.transform = `rotate(${-currentHeading}deg)`; const navArrow = document.getElementById('navArrow'); if (navArrow && navLat !== 0) { const rel = bearingToTarget - currentHeading; navArrow.style.transform = `rotate(${rel}deg)`; } requestAnimationFrame(animateCompass); }
 </script>
 </body>
 </html>
