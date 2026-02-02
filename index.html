@@ -21,7 +21,7 @@
   }
   .container { max-width: 600px; margin: 0 auto; padding-top: 5px; position: relative; min-height: 100vh; }
   
-  /* === AI 引導框 (V63: 高度自適應) === */
+  /* === AI 引導框 === */
   #aiHintBox { 
     display: block; margin-bottom: 10px; padding: 15px; 
     border-radius: 12px; font-weight: bold; text-align: center; 
@@ -204,9 +204,9 @@
     </div>
 
     <div id="aiHintBox">
-      👋 您好！我是您的搜救助手。<br>
-      請依照指示操作，我會協助您取得定位。
-      請先等待GPS訊號~~~
+      👋 您好，我是您的搜救助手。<br>協助您脫困中...<br>
+      請將手機朝向天空...<br>
+      👇 <b>等待定位後，請按下【分享定位】按鈕</b>
     </div>
 
     <div class="primary-action-area">
@@ -215,8 +215,8 @@
 
     <div id="permGuide">
       <h3>🚫 定位權限被關閉</h3>
-      <p>請點擊右上角 ┇ 設定>網站設定>位置>將不允許清單移除~</p>
-      <p>然後重新讀取網頁，開啟位置權限。</p>  
+      <p>請點擊右上角 ┇ 設定>網站設定>位置>將不允許清單移除。</p>
+      <p>然後重新讀取網頁，開啟位置權限。</p>
       <button class="perm-btn" onclick="startSmartLocate()">✅ 重試</button>
     </div>
 
@@ -279,23 +279,23 @@
     <div class="card">
       <h3>十進位 (DD) <span class="card-tag">Google</span></h3>
       <div class="input-row">
-        <div class="input-group"><label>緯度 N (小: 22-25)</label><input type="number" id="ddN" step="any"></div>
-        <div class="input-group"><label>經度 E (大: 120-122)</label><input type="number" id="ddE" step="any"></div>
+        <div class="input-group"><label>緯度 N (小: 22-25)</label><input type="number" id="ddN" step="any" placeholder="25.xxx"></div>
+        <div class="input-group"><label>經度 E (大: 120-122)</label><input type="number" id="ddE" step="any" placeholder="121.xxx"></div>
       </div>
       <button class="btn-convert" onclick="convertFrom('dd')">⚡ 轉換</button>
     </div>
     <div class="card">
       <h3>度分秒 (DMS) <span class="card-tag">地圖</span></h3>
       <label style="color:#E65100; font-size:12px; margin-bottom:5px;">(先緯度 N / 後經度 E)</label>
-      <div class="input-row"><input type="number" id="dmsN_d"><input type="number" id="dmsN_m"><input type="number" id="dmsN_s"></div>
-      <div class="input-row"><input type="number" id="dmsE_d"><input type="number" id="dmsE_m"><input type="number" id="dmsE_s"></div>
+      <div class="input-row"><input type="number" id="dmsN_d" placeholder="度"><input type="number" id="dmsN_m" placeholder="分"><input type="number" id="dmsN_s" placeholder="秒"></div>
+      <div class="input-row"><input type="number" id="dmsE_d" placeholder="度"><input type="number" id="dmsE_m" placeholder="分"><input type="number" id="dmsE_s" placeholder="秒"></div>
       <button class="btn-convert" onclick="convertFrom('dms')">⚡ 轉換</button>
     </div>
     <div class="card">
       <h3>度分 (DMM) <span class="card-tag">航海</span></h3>
       <label style="color:#E65100; font-size:12px; margin-bottom:5px;">(先緯度 N / 後經度 E)</label>
-      <div class="input-row"><input type="number" id="dmmN_d"><input type="number" id="dmmN_m"></div>
-      <div class="input-row"><input type="number" id="dmmE_d"><input type="number" id="dmmE_m"></div>
+      <div class="input-row"><input type="number" id="dmmN_d" placeholder="度"><input type="number" id="dmmN_m" placeholder="分"></div>
+      <div class="input-row"><input type="number" id="dmmE_d" placeholder="度"><input type="number" id="dmmE_m" placeholder="分"></div>
       <button class="btn-convert" onclick="convertFrom('dmm')">⚡ 轉換</button>
     </div>
     <div class="card">
@@ -379,7 +379,7 @@ function updateAiHint(acc) {
   
   // 1. 電腦版
   if (isDesktop) {
-    box.innerHTML = `💻 <b>偵測為電腦版本 (誤差 ±${acc}m)</b><br>定位僅供參考。`;
+    box.innerHTML = `💻 <b>偵測為電腦版本 (誤差 ±${acc}m)</b><br>定位僅供參考，請勿用於實際搜救。`;
     box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
     shareBtn.classList.remove('share-flash');
     return;
@@ -410,7 +410,7 @@ function updateAiHint(acc) {
     shareBtn.classList.add('share-flash'); 
   } else {
     // 溫暖引導
-    box.innerHTML = `👋 <b>您好，我是您的AI助手。</b><br>請將手機朝向空曠處天空...<br>👇 <b>請等待定位，並按下【分享定位】</b>`;
+    box.innerHTML = `👋 <b>您好，我是您的搜救助手。</b><br>請將手機朝向空曠處天空...<br>👇 <b>請等待定位，並按下【分享定位】</b>`;
     box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
     shareBtn.classList.add('share-flash'); 
   }
@@ -418,9 +418,7 @@ function updateAiHint(acc) {
 
 function startSmartLocate() {
   const box = document.getElementById('aiHintBox');
-  if(!navigator.geolocation) { box.innerHTML="❌ 設備不支援定位，
-    <p>請點擊右上角 ┇ 設定>網站設定>位置>將不允許清單移除~</p>
-      <p>然後重新讀取網頁，開啟位置權限。</p>"; return; }
+  if(!navigator.geolocation) { box.innerHTML="❌ 設備不支援定位"; return; }
   if(watchId!==null) navigator.geolocation.clearWatch(watchId);
   
   watchId = navigator.geolocation.watchPosition(
@@ -462,8 +460,6 @@ function handlePositionError(e) {
     setTimeout(() => { navigator.geolocation.getCurrentPosition(handlePositionSuccess, null, {enableHighAccuracy:true}); }, 2000);
   } else {
     box.innerHTML = '❌ 定位失敗 - 請檢查手機權限';
-    <p>請點擊右上角 ┇ 設定>網站設定>位置>將不允許清單移除~</p>
-    <p>然後重新讀取網頁，開啟位置權限。</p>
     box.style.borderColor = "red"; box.style.background = "#ffebee"; box.style.color = "#c62828";
     document.getElementById('permGuide').style.display = 'block';
   }
@@ -482,7 +478,7 @@ function toDeg(rad) { return rad * 180 / Math.PI; }
 function getCardinal(angle) { const d=['北','東北','東','東南','南','西南','西','西北']; return d[Math.round(angle/45)%8]; }
 function ddToDms(lat, lon) { const toDms = (val, isLat) => { const dir = val >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W'); val = Math.abs(val); const d = Math.floor(val); const m = Math.floor((val - d) * 60); const s = ((val - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}"${dir}`; }; return `${toDms(lat, true)}, ${toDms(lon, false)}`; }
 function openGoogleMap(t) { const d=getSource(t); if(d.lat) window.open(`https://www.google.com/maps?q=${d.lat},${d.lon}`); }
-function openTopoMap(t) { const d=getSource(t); if(d.lat) window.open(`https://opentopomap.org/#marker=16/${d.lat}/${d.lon}`); }
+function openTopoMap(t) { const d=getSource(t); if(d.lat) window.open(`https://opentopomap.org/#marker=15/${d.lat}/${d.lon}`); }
 function saveTrackPoint(lat, lon, alt, acc) { if(trackHistory.length>0 && getDistance(trackHistory[trackHistory.length-1].lat, trackHistory[trackHistory.length-1].lon, lat, lon)<15)return; trackHistory.push({lat,lon,alt,acc,time:new Date().toISOString()}); localStorage.setItem('track_history', JSON.stringify(trackHistory)); }
 function updateTrackUI() { const l=document.getElementById('trackList'); l.innerHTML=''; const s=Math.min(trackHistory.length,50); for(let i=trackHistory.length-1;i>=trackHistory.length-s;i--){const p=trackHistory[i]; let dt; try{dt=new Date(p.time).toLocaleString();}catch{dt="時間錯誤";} const d=document.createElement('div'); d.className='track-item'; d.innerHTML=`<div class="track-info"><div class="track-time">${dt}</div><div class="track-coord">${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</div></div><div class="track-actions"><button class="btn-nav-to" onclick="setNavTarget(${p.lat},${p.lon})">導航</button><button class="btn-del-point" onclick="deletePoint(${i})">✕</button></div>`; l.appendChild(d);} }
 function clearTrackHistory() { if(confirm("清除?")){trackHistory=[];localStorage.removeItem('track_history'); updateTrackUI(); initTrackMap(); closeNav();} }
@@ -514,5 +510,3 @@ function switchTab(t){ document.querySelectorAll('.tab-btn,.page-section').forEa
 </script>
 </body>
 </html>
-
-
