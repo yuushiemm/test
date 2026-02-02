@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="author" content="yuushiemm">
-<title>全能定位轉換助手 V48 Share-Pro @yuushiemm</title>
+<title>全能定位轉換助手 V49 Final @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -151,9 +151,12 @@
   #navPanel { background: linear-gradient(135deg, #009688 0%, #00796b 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; display: none; text-align: center; }
   #navArrow { font-size: 40px; margin: 5px 0; transition: transform 0.2s linear; display: inline-block; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
-  /* Page 3: 轉換 (V17樣式) */
+  /* V49: 轉換頁 V17 復刻版 (提示文字) */
   .card { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; }
   .card h3 { margin: 0 0 10px 0; font-size: 16px; color: #333; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+  .card-tag { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 4px; color: #666; font-weight: normal; margin-left: auto; }
+  .coord-hint { font-size: 12px; color: #E65100; font-weight: bold; margin-right: 5px; }
+  
   .input-row { display: flex; gap: 5px; margin-bottom: 5px; }
   .input-group { flex: 1; }
   label { font-size: 12px; color: #888; display: block; margin-bottom: 2px; }
@@ -184,7 +187,7 @@
     </div>
 
     <div class="primary-action-area">
-      <button id="shareBtn" class="btn-step2" onclick="handleLineShare()">💬 分享定位 (含GPX)</button>
+      <button id="shareBtn" class="btn-step2" onclick="shareComplex('gps')">💬 分享定位 + GPX</button>
     </div>
 
     <div id="permGuide">
@@ -219,7 +222,7 @@
       <button class="big-btn btn-shot" onclick="takeSnapshot()">📸 下載圖卡</button>
       <button class="big-btn btn-map" onclick="openGoogleMap('gps')">🌏 Google</button>
       <button class="big-btn btn-topo" onclick="openTopoMap('gps')">⛰️ Topo</button>
-      <button class="big-btn btn-dl" onclick="shareOrDownloadGPX('gps')">📤 分享 GPX</button>
+      <button class="big-btn btn-dl" onclick="shareComplex('gps', true)">📤 僅傳 GPX</button>
     </div>
   </div>
 
@@ -241,7 +244,7 @@
 
     <div id="trackMap"></div>
     <div style="margin-top:10px; display:flex; gap:10px;">
-      <button class="big-btn btn-dl" onclick="exportTrackGPX()">📤 分享/匯出 GPX</button>
+      <button class="big-btn btn-dl" onclick="exportTrackGPX()">📤 分享完整軌跡</button>
       <button class="big-btn" style="background:#d32f2f;" onclick="clearTrackHistory()">🗑️ 清除</button>
     </div>
     
@@ -255,29 +258,40 @@
     <div class="status-bar">輸入任一格式後按轉換成功方可分享</div>
     
     <div class="card">
-      <h3>十進位 (DD)</h3>
-      <div class="input-row"><div class="input-group"><label>緯度 N</label><input type="number" id="ddN"></div><div class="input-group"><label>經度 E</label><input type="number" id="ddE"></div></div>
+      <h3>十進位 (DD) <span class="card-tag">Google</span></h3>
+      <div class="input-row">
+        <div class="input-group">
+          <label>緯度 N (小: 22-25)</label>
+          <input type="number" id="ddN" step="any" placeholder="25.xxx">
+        </div>
+        <div class="input-group">
+          <label>經度 E (大: 120-122)</label>
+          <input type="number" id="ddE" step="any" placeholder="121.xxx">
+        </div>
+      </div>
       <button class="btn-convert" onclick="convertFrom('dd')">⚡ 轉換</button>
     </div>
+
     <div class="card">
-      <h3>度分秒 (DMS)</h3>
+      <h3>度分秒 (DMS) <span class="coord-hint">(先緯 N / 後經 E)</span> <span class="card-tag">地圖</span></h3>
       <div class="input-row"><input type="number" id="dmsN_d" placeholder="度"><input type="number" id="dmsN_m" placeholder="分"><input type="number" id="dmsN_s" placeholder="秒"></div>
       <div class="input-row"><input type="number" id="dmsE_d" placeholder="度"><input type="number" id="dmsE_m" placeholder="分"><input type="number" id="dmsE_s" placeholder="秒"></div>
       <button class="btn-convert" onclick="convertFrom('dms')">⚡ 轉換</button>
     </div>
+
     <div class="card">
-      <h3>度分 (DMM)</h3>
+      <h3>度分 (DMM) <span class="coord-hint">(先緯 N / 後經 E)</span> <span class="card-tag">航海</span></h3>
       <div class="input-row"><input type="number" id="dmmN_d" placeholder="度"><input type="number" id="dmmN_m" placeholder="分"></div>
       <div class="input-row"><input type="number" id="dmmE_d" placeholder="度"><input type="number" id="dmmE_m" placeholder="分"></div>
       <button class="btn-convert" onclick="convertFrom('dmm')">⚡ 轉換</button>
     </div>
     
     <div class="action-area convert-actions">
-      <button class="big-btn btn-line-text" onclick="shareLineText('form')">💬 分享此座標 (LINE)</button>
+      <button class="big-btn btn-line-text" onclick="shareComplex('form')">💬 分享此座標</button>
       <button class="big-btn btn-map" onclick="openGoogleMap('form')">🌏 Google 地圖</button>
       <button class="big-btn btn-topo" onclick="openTopoMap('form')">⛰️ Topo 地圖</button>
-      <button class="big-btn btn-share-gpx" onclick="shareOrDownloadGPX('form')">📤 分享 GPX</button>
-      <button class="big-btn btn-dl" onclick="shareOrDownloadGPX('form')">📥 下載 GPX</button>
+      <button class="big-btn btn-share-gpx" onclick="shareComplex('form', true)">📤 分享 GPX</button>
+      <button class="big-btn btn-dl" onclick="shareComplex('form', true)">📥 下載 GPX</button>
     </div>
   </div>
   
@@ -295,7 +309,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V48 (Web Share API for GPX)
+ * 全能定位轉換助手 V49 Final (Native Share API & V17 Restoration)
  * Copyright (c) 2026 yuushiemm
  */
 
@@ -305,7 +319,7 @@ let navLat = 0, navLon = 0;
 let map, trackMap, marker;
 let isMapLocked = true; 
 let globalInfo = { acc: "--", alt: "--", weather: "--", wind: "--" };
-let sunInfoText = ""; // 儲存日出日落字串供分享用
+let sunInfoText = ""; 
 let watchId = null;
 let currentHeading = 0; 
 let targetHeading = 0;
@@ -386,52 +400,75 @@ function handlePositionError(err) {
   runAiDiagnosis(null, err);
 }
 
-// === V48: 原生分享 GPX 核心 (iOS/Android 通用) ===
-async function shareOrDownloadGPX(t, isTrack = false) {
-  let lat, lon, filename, content;
-  const time = new Date().toISOString();
+// === V49: 複合分享功能 (Native Share) ===
+async function shareComplex(t, fileOnly = false) {
+  const d = getSource(t);
+  if (!d.lat) return alert("無座標");
 
-  if (isTrack) {
-    if (trackHistory.length === 0) return alert("無記錄");
-    filename = `track_${new Date().toISOString().slice(0,10)}.gpx`;
-    content = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?><gpx version="1.1" creator="YuushiemmTool"><trk><trkseg>`;
-    trackHistory.forEach(p => content += `<trkpt lat="${p.lat}" lon="${p.lon}"><time>${new Date(p.time).toISOString()}</time></trkpt>`);
-    content += `</trkseg></trk></gpx>`;
-  } else {
-    const d = getSource(t);
-    if (!d.lat) return alert("無座標");
-    lat = d.lat; lon = d.lon;
-    filename = `point_${lat.toFixed(5)}_${lon.toFixed(5)}.gpx`;
-    content = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+  // 1. 準備文字 (V17 格式)
+  const dms = ddToDms(d.lat, d.lon);
+  const topoUrl = `https://opentopomap.org/#marker=16/${d.lat}/${d.lon}`;
+  const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`;
+  
+  let text = `📍 位置分享\n──────────────\n`;
+  text += `經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n`;
+  text += `度分秒: ${dms}\n`;
+  if (t === 'gps') {
+    text += `精度: ${d.accStr}\n`;
+    text += `海拔: ${d.altStr}\n`;
+    text += `${globalInfo.weather} | 風速: ${globalInfo.wind}\n`;
+    text += `${sunInfoText}\n`;
+  }
+  text += `──────────────\n`;
+  text += `⛰️ Topo: ${topoUrl}\n\n`;
+  text += `🌏 Google: ${gmapUrl}`;
+
+  // 2. 準備檔案 (GPX)
+  const time = new Date().toISOString();
+  const gpxContent = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 <gpx version="1.1" creator="YuushiemmTool">
-  <wpt lat="${lat}" lon="${lon}">
+  <wpt lat="${d.lat}" lon="${d.lon}">
     <time>${time}</time>
     <name>Point</name>
   </wpt>
 </gpx>`;
-  }
+  const filename = `point_${d.lat.toFixed(5)}_${d.lon.toFixed(5)}.gpx`;
+  const file = new File([gpxContent], filename, { type: 'application/gpx+xml' });
 
-  const file = new File([content], filename, { type: 'application/gpx+xml' });
-
-  // 嘗試使用 Web Share API (原生分享選單)
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+  // 3. 嘗試原生分享
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
-      await navigator.share({
-        files: [file],
-        title: filename,
-        text: 'GPX 軌跡分享'
-      });
-    } catch (error) {
-      console.log('分享取消或失敗，轉為下載:', error);
-      triggerDownload(file);
+      let shareData = { files: [file] };
+      if (!fileOnly) {
+        shareData.title = "位置分享";
+        shareData.text = text;
+      }
+      await navigator.share(shareData);
+    } catch (err) {
+      console.log("分享取消或失敗", err);
+      // 如果是用戶取消，就不做 fallback。如果是失敗，嘗試 fallback。
+      if (err.name !== 'AbortError') {
+        alert("分享失敗，轉為傳統模式");
+        downloadFile(file);
+        if(!fileOnly) copyToClipboard(text);
+      }
     }
   } else {
-    // 不支援原生分享，退回傳統下載
-    triggerDownload(file);
+    // 4. Fallback: 舊式行為
+    downloadFile(file);
+    if (!fileOnly) {
+      // 這裡如果直接跳轉 LINE，會中斷下載，所以改用 Clipboard
+      copyToClipboard(text);
+      setTimeout(() => {
+         if(confirm("GPX 已下載，文字已複製。是否開啟 LINE 貼上？")) {
+            window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
+         }
+      }, 500);
+    }
   }
 }
 
-function triggerDownload(file) {
+function downloadFile(file) {
   const url = URL.createObjectURL(file);
   const a = document.createElement("a");
   a.href = url;
@@ -442,50 +479,39 @@ function triggerDownload(file) {
   URL.revokeObjectURL(url);
 }
 
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    // alert("文字已複製到剪貼簿");
+  }).catch(err => {
+    console.error('複製失敗', err);
+  });
+}
+
+// === 軌跡匯出 (V49: 使用原生分享) ===
 function exportTrackGPX() {
-  shareOrDownloadGPX(null, true);
-}
-
-// === V48: LINE 分享 + 自動 GPX 分享 ===
-function handleLineShare() {
-  // 1. 嘗試觸發 GPX 分享 (如果支援會彈出選單)
-  shareOrDownloadGPX('gps');
+  if (trackHistory.length === 0) return alert("無記錄");
   
-  // 2. 準備文字並跳轉 LINE
-  setTimeout(() => {
-    shareLineText('gps');
-  }, 1000); // 給使用者一點時間反應 GPX
-}
-
-// === V48: LINE 文字格式還原 V17 + 日出日落 ===
-function shareLineText(t) {
-  const d = getSource(t);
-  if (!d.lat) return alert("無座標");
+  let content = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?><gpx version="1.1" creator="YuushiemmTool"><trk><trkseg>`;
+  trackHistory.forEach(p => content += `<trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.alt}</ele><time>${new Date(p.time).toISOString()}</time></trkpt>`);
+  content += `</trkseg></trk></gpx>`;
   
-  const dms = ddToDms(d.lat, d.lon);
-  const topoUrl = `https://opentopomap.org/#marker=16/${d.lat}/${d.lon}`;
-  const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`;
+  const filename = `track_${new Date().toISOString().slice(0,10)}.gpx`;
+  const file = new File([content], filename, { type: 'application/gpx+xml' });
   
-  // 組合 V17 風格字串
-  let text = `📍 全能定位轉換助手\n──────────────\n`;
-  text += `經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n`;
-  text += `度分秒: ${dms}\n`;
-  
-  if (t === 'gps') {
-    text += `精度: ${d.accStr}\n`;
-    text += `海拔: ${d.altStr}\n`;
-    text += `${globalInfo.weather} | 風速: ${globalInfo.wind}\n`;
-    text += `${sunInfoText}\n`; // 加入日出日落
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({
+      files: [file],
+      title: "軌跡匯出",
+      text: "這是我的軌跡紀錄"
+    }).catch(err => {
+      if(err.name !== 'AbortError') downloadFile(file);
+    });
+  } else {
+    downloadFile(file);
   }
-  
-  text += `──────────────\n`;
-  text += `⛰️ Topo 地圖:\n${topoUrl}\n\n`;
-  text += `🌏 Google 地圖:\n${gmapUrl}`;
-  
-  window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
 }
 
-// === 圖卡截圖 (CORS Fix) ===
+// === 圖卡截圖 (CORS) ===
 function takeSnapshot() {
   if (gpsLat === 0) return;
   const btn = document.querySelector('.btn-shot');
@@ -504,7 +530,7 @@ function takeSnapshot() {
     link.click();
     btn.innerText = originalText;
   }).catch(err => {
-    alert("截圖受限，請手動截圖");
+    alert("截圖失敗，請手動截圖");
     btn.innerText = originalText;
   });
 }
@@ -520,7 +546,7 @@ function calculateSunTimes(lat, lng) {
   const sunriseStr = times.sunrise.toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit', hour12: false});
   const sunsetStr = times.sunset.toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit', hour12: false});
   
-  sunInfoText = `日出: ${sunriseStr} | 日落: ${sunsetStr}`; // 存給分享用
+  sunInfoText = `日出: ${sunriseStr} | 日落: ${sunsetStr}`; 
   alertBox.style.display = 'inline-block';
   alertBox.innerHTML = `🌅 ${sunriseStr} | 🌇 ${sunsetStr}`;
   
@@ -671,7 +697,7 @@ function switchTab(t) {
   }
 }
 
-// === 轉換邏輯 ===
+// === V49: 轉換頁功能還原 ===
 function convertFrom(t) {
   try {
     let lat=0,lon=0;
@@ -713,6 +739,7 @@ function getBearing(startLat, startLng, destLat, destLng) { startLat = toRad(sta
 function toRad(deg) { return deg * Math.PI / 180; }
 function toDeg(rad) { return rad * 180 / Math.PI; }
 function getCardinal(angle) { const d=['北','東北','東','東南','南','西南','西','西北']; return d[Math.round(angle/45)%8]; }
+function shareLineText(t) { /* 此函數已整合至 shareComplex */ }
 function ddToDms(lat, lon) { const toDms = (val, isLat) => { const dir = val >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W'); val = Math.abs(val); const d = Math.floor(val); const m = Math.floor((val - d) * 60); const s = ((val - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}"${dir}`; }; return `${toDms(lat, true)}, ${toDms(lon, false)}`; }
 function openGoogleMap(t) { const d=(t==='gps')?{lat:gpsLat,lon:gpsLon}:(t==='nav'?{lat:navLat,lon:navLon}:{lat:formLat,lon:formLon}); if(d.lat) window.open(`https://www.google.com/maps?q=${d.lat},${d.lon}`); }
 function openTopoMap(t) { const d=(t==='gps')?{lat:gpsLat,lon:gpsLon}:(t==='nav'?{lat:navLat,lon:navLon}:{lat:formLat,lon:formLon}); if(d.lat) window.open(`https://opentopomap.org/#marker=15/${d.lat}/${d.lon}`); }
