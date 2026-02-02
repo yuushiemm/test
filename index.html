@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="author" content="yuushiemm">
-<title>全能定位轉換助手 V62 Safe-Guide @yuushiemm</title>
+<title>全能定位轉換助手 V63 Logic-Final @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -21,11 +21,11 @@
   }
   .container { max-width: 600px; margin: 0 auto; padding-top: 5px; position: relative; min-height: 100vh; }
   
-  /* === AI 引導框 (V62: 針對電腦版與安全引導優化) === */
+  /* === AI 引導框 (V63: 高度自適應) === */
   #aiHintBox { 
     display: block; margin-bottom: 10px; padding: 15px; 
     border-radius: 12px; font-weight: bold; text-align: center; 
-    font-size: 18px; line-height: 1.5; 
+    font-size: 17px; line-height: 1.6; 
     border: 2px solid #2196f3; background: #e3f2fd; color: #0d47a1;
     transition: all 0.5s ease;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -33,16 +33,18 @@
 
   /* === 按鈕動畫特效 === */
   .urgent-flash { 
-    animation: flash-red 1s infinite alternate; 
+    animation: flash-red 0.8s infinite alternate; 
     border: 2px solid #ff5252 !important;
+    background-color: #ff5722 !important;
+    transform: scale(1.02);
   }
-  @keyframes flash-red { from { background-color: #546e7a; box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); } to { background-color: #ff5722; box-shadow: 0 0 10px 5px rgba(255, 82, 82, 0.3); } }
+  @keyframes flash-red { from { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.7); } to { box-shadow: 0 0 15px 5px rgba(255, 87, 34, 0.4); } }
 
   .share-flash {
-    animation: flash-green 0.8s infinite alternate;
+    animation: flash-green 1s infinite alternate;
     border: 3px solid #69f0ae !important;
   }
-  @keyframes flash-green { from { transform: scale(1); box-shadow: 0 0 0 0 rgba(105, 240, 174, 0.7); } to { transform: scale(1.03); box-shadow: 0 0 15px 5px rgba(105, 240, 174, 0.5); } }
+  @keyframes flash-green { from { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); } to { transform: scale(1.03); box-shadow: 0 0 20px 5px rgba(76, 175, 80, 0.4); } }
 
   /* === 底部導航 === */
   .tab-nav { 
@@ -202,11 +204,12 @@
     </div>
 
     <div id="aiHintBox">
-      👋 您好！我是您的搜救助手。<br>請依照指示操作，我會協助您脫困。
+      👋 您好！我是您的搜救助手。<br>
+      請依照指示操作，我會協助您脫困。
     </div>
 
     <div class="primary-action-area">
-      <button id="shareBtn" class="btn-step2" onclick="shareSafe('gps')">💬 分享定位 + GPX</button>
+      <button id="shareBtn" class="btn-step2 share-flash" onclick="shareSafe('gps')">💬 分享定位 + GPX</button>
     </div>
 
     <div id="permGuide">
@@ -222,7 +225,7 @@
       </div>
       <div class="gps-full-display">
         <div class="gps-coords-box">
-          <div class="gps-coords" id="gpsDisplayVal">📡 連線中...</div>
+          <div class="gps-coords" id="gpsDisplayVal">定位中...</div>
           <div id="sunInfo">計算中...</div>
         </div>
       </div>
@@ -274,23 +277,23 @@
     <div class="card">
       <h3>十進位 (DD) <span class="card-tag">Google</span></h3>
       <div class="input-row">
-        <div class="input-group"><label>緯度 N (小: 22-25)</label><input type="number" id="ddN" step="any" placeholder="25.xxx"></div>
-        <div class="input-group"><label>經度 E (大: 120-122)</label><input type="number" id="ddE" step="any" placeholder="121.xxx"></div>
+        <div class="input-group"><label>緯度 N (小: 22-25)</label><input type="number" id="ddN" step="any"></div>
+        <div class="input-group"><label>經度 E (大: 120-122)</label><input type="number" id="ddE" step="any"></div>
       </div>
       <button class="btn-convert" onclick="convertFrom('dd')">⚡ 轉換</button>
     </div>
     <div class="card">
       <h3>度分秒 (DMS) <span class="card-tag">地圖</span></h3>
       <label style="color:#E65100; font-size:12px; margin-bottom:5px;">(先緯度 N / 後經度 E)</label>
-      <div class="input-row"><input type="number" id="dmsN_d" placeholder="度"><input type="number" id="dmsN_m" placeholder="分"><input type="number" id="dmsN_s" placeholder="秒"></div>
-      <div class="input-row"><input type="number" id="dmsE_d" placeholder="度"><input type="number" id="dmsE_m" placeholder="分"><input type="number" id="dmsE_s" placeholder="秒"></div>
+      <div class="input-row"><input type="number" id="dmsN_d"><input type="number" id="dmsN_m"><input type="number" id="dmsN_s"></div>
+      <div class="input-row"><input type="number" id="dmsE_d"><input type="number" id="dmsE_m"><input type="number" id="dmsE_s"></div>
       <button class="btn-convert" onclick="convertFrom('dms')">⚡ 轉換</button>
     </div>
     <div class="card">
       <h3>度分 (DMM) <span class="card-tag">航海</span></h3>
       <label style="color:#E65100; font-size:12px; margin-bottom:5px;">(先緯度 N / 後經度 E)</label>
-      <div class="input-row"><input type="number" id="dmmN_d" placeholder="度"><input type="number" id="dmmN_m" placeholder="分"></div>
-      <div class="input-row"><input type="number" id="dmmE_d" placeholder="度"><input type="number" id="dmmE_m" placeholder="分"></div>
+      <div class="input-row"><input type="number" id="dmmN_d"><input type="number" id="dmmN_m"></div>
+      <div class="input-row"><input type="number" id="dmmE_d"><input type="number" id="dmmE_m"></div>
       <button class="btn-convert" onclick="convertFrom('dmm')">⚡ 轉換</button>
     </div>
     <div class="card">
@@ -321,7 +324,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V62 Safe-Guide
+ * 全能定位轉換助手 V63 Logic-Final
  * Copyright (c) 2026 yuushiemm
  */
 
@@ -363,45 +366,52 @@ window.onload=function(){
 
 function checkLineEnvironment() {
   isLine = /Line/i.test(navigator.userAgent);
-  if (isLine) {
-    document.getElementById('browserBtn').classList.add('urgent-flash');
-    document.getElementById('aiHintBox').innerHTML = "⚠️ 偵測到 LINE 環境，定位可能受限！<br>請點擊上方紅色閃爍按鈕切換瀏覽器。";
-    document.getElementById('aiHintBox').style.borderColor = "#ff5722";
-    document.getElementById('aiHintBox').style.background = "#fbe9e7";
-    document.getElementById('aiHintBox').style.color = "#d84315";
-  }
+  // V63: LINE偵測，但不預設顯示紅框，直到定位結果出來再判斷
 }
 
-// === V62: AI 邏輯修正 ===
+// === V63: AI 核心邏輯 (精確分流) ===
 function updateAiHint(acc) {
   const box = document.getElementById('aiHintBox');
   const shareBtn = document.getElementById('shareBtn');
+  const browserBtn = document.getElementById('browserBtn');
   
-  // 1. 電腦版偵測
+  // 1. 電腦版
   if (isDesktop) {
-    box.innerHTML = `💻 <b>偵測為電腦版本 (精度 ±${acc}m)</b><br>定位可能基於 IP，僅供參考。`;
+    box.innerHTML = `💻 <b>偵測為電腦版本 (誤差 ±${acc}m)</b><br>定位僅供參考，請勿用於實際搜救。`;
     box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
     shareBtn.classList.remove('share-flash');
     return;
   }
 
-  // 2. 行動版邏輯
+  // 2. LINE 環境分流
+  if (isLine) {
+    if (acc > 50) {
+      // 訊號差 -> 不准分享，強制開瀏覽器
+      box.innerHTML = `⚠️ <b>LINE 定位誤差過大 (±${acc}m)！</b><br>數據不可用。👇 <b>請務必點擊【瀏覽器開啟】</b>`;
+      box.style.borderColor = "#ff5722"; box.style.background = "#fbe9e7"; box.style.color = "#d84315";
+      browserBtn.classList.add('urgent-flash');
+      shareBtn.classList.remove('share-flash');
+    } else {
+      // 訊號好 -> 幸運 -> 允許分享
+      box.innerHTML = `✅ <b>LINE 訊號鎖定 (±${acc}m)！</b><br>👆 <b>請快按【分享定位】</b>`;
+      box.style.borderColor = "#4caf50"; box.style.background = "#e8f5e9"; box.style.color = "#2e7d32";
+      browserBtn.classList.remove('urgent-flash');
+      shareBtn.classList.add('share-flash');
+    }
+    return;
+  }
+
+  // 3. 標準瀏覽器環境
   if (acc <= 30) {
-    box.innerHTML = `✅ <b>衛星已鎖定 (±${acc}m)！</b><br>位置變精準了，請再次按下分享！`;
+    box.innerHTML = `✅ <b>衛星已鎖定 (±${acc}m)！</b><br>位置精準，請再次按下分享！`;
     box.style.borderColor = "#4caf50"; box.style.background = "#e8f5e9"; box.style.color = "#2e7d32";
     shareBtn.classList.add('share-flash'); 
-    if(isLine) document.getElementById('browserBtn').classList.remove('urgent-flash');
-  } else if (acc <= 150) {
-    // V62: 修改話術，引導看向天空
-    box.innerHTML = `⚠️ 訊號微弱 (±${acc}m)，請盡量把手機朝向看的到天空的地方...<br>但請<b>先按分享</b>，讓搜救人員知道大概位置！`;
-    box.style.borderColor = "#ff9800"; box.style.background = "#fff3e0"; box.style.color = "#ef6c00";
-    shareBtn.classList.add('share-flash'); 
   } else {
-    box.innerHTML = `📡 正在搜尋衛星 (±${acc}m)...<br>請在空曠處稍等，或先按分享回報。`;
+    // 溫暖引導
+    box.innerHTML = `👋 <b>您好，我是您的搜救助手。</b><br>請將手機朝向天空...<br>👇 <b>請等待定位，並按下【分享定位】</b>`;
     box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
-    shareBtn.classList.remove('share-flash');
+    shareBtn.classList.add('share-flash'); 
   }
-  lastBestAccuracy = Math.min(lastBestAccuracy, acc);
 }
 
 function startSmartLocate() {
@@ -421,7 +431,7 @@ function handlePositionSuccess(p) {
   gpsLat = c.latitude; gpsLon = c.longitude;
   const acc = Math.round(c.accuracy);
   
-  updateAiHint(acc);
+  updateAiHint(acc); // V63 邏輯核心
 
   document.getElementById('gpsDisplayVal').innerHTML = `<span>${gpsLat.toFixed(5)},</span> <span>${gpsLon.toFixed(5)}</span>`;
   globalInfo.acc = `±${acc}m`; 
@@ -453,7 +463,8 @@ function handlePositionError(e) {
   }
 }
 
-// ... (以下維持 V61 的完整功能函數，無變動以確保穩定) ...
+// ... (功能函數與前版相同，省略重複代碼以節省空間，確保 V62 功能完整保留) ...
+// (包含: SOS, TWD, GPX, Map, Track, Share 邏輯，與 V62 一致)
 function sanitizeTrackData() { trackHistory = trackHistory.map(p => { let t = new Date(p.time); if(isNaN(t.getTime())) t=new Date(); p.time=t.toISOString(); return p; }); localStorage.setItem('track_history', JSON.stringify(trackHistory)); }
 function initMap() { map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 16, crossOrigin: true }).addTo(map); }
 function initTrackMap() { if(trackMap) trackMap.remove(); trackMap = L.map('trackMap', {zoomControl: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 16, crossOrigin: true }).addTo(trackMap); }
@@ -476,20 +487,7 @@ function exportTrackGPX() { if(trackHistory.length===0) return alert("無記錄"
 function forceDownloadGPX(t) { const d = getSource(t); if(!d.lat) return alert("無座標"); const content=`<?xml version="1.0"?><gpx version="1.1"><wpt lat="${d.lat}" lon="${d.lon}"><time>${new Date().toISOString()}</time><name>Point</name></wpt></gpx>`; const file=new File([content],"point.gpx",{type:"text/xml"}); safeDownload(file); }
 function safeDownload(file) { try { const url = URL.createObjectURL(file); const a = document.createElement("a"); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } catch (e) { alert("下載受限"); } }
 function deletePoint(index) { if (confirm("刪除此點?")) { trackHistory.splice(index, 1); localStorage.setItem('track_history', JSON.stringify(trackHistory)); switchTab('track'); } }
-async function shareSafe(t, fileOnly = false) {
-  const d = getSource(t); if (!d.lat) return alert("無座標");
-  const dms = ddToDms(d.lat, d.lon); const topoUrl = `https://opentopomap.org/#marker=16/${d.lat}/${d.lon}`; const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`;
-  let text = `📍 全能定位轉換助手 位置分享\n──────────────\n經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n度分秒: ${dms}\n`;
-  if (t === 'gps') { 
-    let w = globalInfo.weather.replace(/^天氣:\s*/, '').trim(); 
-    let wi = globalInfo.wind.replace(/^風速:\s*/, '').trim(); 
-    text += `精度: ${d.accStr}\n海拔: ${d.altStr}\n天氣: ${w} | 風速: ${wi}\n${sunInfoText}\n`; 
-  }
-  text += `──────────────\n⛰️ Topo: ${topoUrl}\n\n🌏 Google: ${gmapUrl}`;
-  const time = new Date().toISOString(); const content = `<?xml version="1.0"?><gpx version="1.1"><wpt lat="${d.lat}" lon="${d.lon}"><time>${time}</time><name>Point</name></wpt></gpx>`;
-  const file = new File([content], `point.gpx`, { type: 'text/xml' });
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) { try { let data = { files: [file] }; if (!fileOnly) { data.title = "位置"; data.text = text; } await navigator.share(data); } catch (err) { if (err.name !== 'AbortError') fallbackShare(file, text, fileOnly); } } else { fallbackShare(file, text, fileOnly); }
-}
+async function shareSafe(t, fileOnly = false) { const d = getSource(t); if (!d.lat) return alert("無座標"); const dms = ddToDms(d.lat, d.lon); const topoUrl = `https://opentopomap.org/#marker=16/${d.lat}/${d.lon}`; const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`; let text = `📍 全能定位轉換助手 位置分享\n──────────────\n經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n度分秒: ${dms}\n`; if (t === 'gps') { let w = globalInfo.weather.replace(/^天氣:\s*/, '').trim(); let wi = globalInfo.wind.replace(/^風速:\s*/, '').trim(); text += `精度: ${d.accStr}\n海拔: ${d.altStr}\n天氣: ${w} | 風速: ${wi}\n${sunInfoText}\n`; } text += `──────────────\n⛰️ Topo: ${topoUrl}\n\n🌏 Google: ${gmapUrl}`; const time = new Date().toISOString(); const content = `<?xml version="1.0"?><gpx version="1.1"><wpt lat="${d.lat}" lon="${d.lon}"><time>${time}</time><name>Point</name></wpt></gpx>`; const file = new File([content], `point.gpx`, { type: 'text/xml' }); if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) { try { let data = { files: [file] }; if (!fileOnly) { data.title = "位置"; data.text = text; } await navigator.share(data); } catch (err) { if (err.name !== 'AbortError') fallbackShare(file, text, fileOnly); } } else { fallbackShare(file, text, fileOnly); } }
 function fallbackShare(file, text, fileOnly) { safeDownload(file); if (!fileOnly) { setTimeout(() => { window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`; }, 500); } }
 function takeSnapshot() { if(gpsLat===0)return; const btn = document.querySelector('.btn-shot'); const originalText = btn.innerText; btn.innerText = "截圖中..."; html2canvas(document.getElementById('dashboard'), { scale: 2, useCORS: true, allowTaint: true, logging: false }).then(canvas => { const link = document.createElement('a'); link.download = `map_${new Date().getTime()}.png`; link.href = canvas.toDataURL(); link.click(); btn.innerText = originalText; }).catch(err => { alert("截圖受限，請手動截圖"); btn.innerText = originalText; }); }
 function calculateSunTimes(lat, lng) { const alertBox = document.getElementById('sunInfo'); if (typeof SunCalc === 'undefined') { alertBox.innerHTML = "時間庫未載入"; return; } const now = new Date(); const times = SunCalc.getTimes(now, lat, lng); const sunriseStr = times.sunrise.toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit', hour12: false}); const sunsetStr = times.sunset.toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit', hour12: false}); sunInfoText = `日出: ${sunriseStr} | 日落: ${sunsetStr}`; alertBox.style.display = 'inline-block'; alertBox.innerHTML = `日出 ${sunriseStr} | 日落 ${sunsetStr}`; if (now < times.sunrise || now > times.sunset) { alertBox.style.background = "#37474f"; alertBox.style.color = "#cfd8dc"; } else { alertBox.style.background = "rgba(255,255,255,0.2)"; alertBox.style.color = "#333"; } }
