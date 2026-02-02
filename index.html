@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="author" content="yuushiemm">
-<title>全能定位轉換助手 V50 Safe @yuushiemm</title>
+<title>全能定位轉換助手 V51 Final @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,7 +12,7 @@
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
 <style>
-  /* === V50 全局基礎 === */
+  /* === 全局基礎 === */
   body { 
     font-family: -apple-system, "Microsoft JhengHei", sans-serif; 
     padding: 0; background: #f4f6f8; color: #333; margin: 0; 
@@ -111,11 +111,13 @@
   }
   .gps-coords { font-size: 24px; font-weight: bold; font-family: monospace; letter-spacing: 1px; }
   
+  /* V51: 中文日出日落樣式 */
   #sunInfo { 
     margin-top: 5px; font-size: 15px; font-weight: normal; 
-    padding: 4px 10px; border-radius: 12px; 
+    padding: 4px 12px; border-radius: 12px; 
     background: rgba(255,255,255,0.15); 
     display: inline-block;
+    white-space: nowrap;
   }
 
   .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
@@ -244,7 +246,7 @@
 
     <div id="trackMap"></div>
     <div style="margin-top:10px; display:flex; gap:10px;">
-      <button class="big-btn btn-dl" onclick="exportTrackGPX()">📤 分享完整軌跡</button>
+      <button class="big-btn btn-dl" onclick="exportTrackGPX()">📤 分享/下載軌跡 GPX</button>
       <button class="big-btn" style="background:#d32f2f;" onclick="clearTrackHistory()">🗑️ 清除</button>
     </div>
     
@@ -309,7 +311,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V50 Safe (Silent Fallback)
+ * 全能定位轉換助手 V51 Final (Track Fix & Text Clean)
  * Copyright (c) 2026 yuushiemm
  */
 
@@ -400,12 +402,74 @@ function handlePositionError(err) {
   runAiDiagnosis(null, err);
 }
 
-// === V50: 安全分享機制 (Silent Fallback) ===
+// === V51: 軌跡匯出 (邏輯重寫，確保下載) ===
+function exportTrackGPX() {
+  if (!trackHistory || trackHistory.length === 0) {
+    alert("尚未記錄到任何軌跡點。\n請等待定位成功後再試。");
+    return;
+  }
+  
+  const timeStr = new Date().toISOString();
+  let gpxContent = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<gpx version="1.1" creator="YuushiemmTool">
+  <trk>
+    <name>Track ${new Date().toLocaleTimeString()}</name>
+    <trkseg>`;
+  
+  trackHistory.forEach(p => {
+    // 轉換時間格式為 ISO (GPX標準)
+    const isoTime = new Date(p.time).toISOString();
+    gpxContent += `
+      <trkpt lat="${p.lat}" lon="${p.lon}">
+        <ele>${p.alt}</ele>
+        <time>${isoTime}</time>
+      </trkpt>`;
+  });
+  
+  gpxContent += `
+    </trkseg>
+  </trk>
+</gpx>`;
+  
+  const filename = `track_${timeStr.slice(0,10)}.gpx`;
+  const file = new File([gpxContent], filename, { type: 'application/gpx+xml' });
+  
+  // 優先嘗試原生分享 (方便傳LINE)
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({
+      files: [file],
+      title: "軌跡匯出",
+      text: "這是我的移動軌跡"
+    }).catch(err => {
+      // 只有非取消的錯誤才 fallback 下載
+      if (err.name !== 'AbortError') {
+        forceDownload(file);
+      }
+    });
+  } else {
+    // 不支援分享，直接強制下載
+    forceDownload(file);
+  }
+}
+
+// 強制下載函式
+function forceDownload(file) {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// === V50: 安全分享機制 (點位分享) ===
 async function shareSafe(t, fileOnly = false) {
   const d = getSource(t);
   if (!d.lat) return alert("無座標");
 
-  // 1. 產生分享文字
+  // V51: 修正文字去重複
   const dms = ddToDms(d.lat, d.lon);
   const topoUrl = `https://opentopomap.org/#marker=16/${d.lat}/${d.lon}`;
   const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`;
@@ -416,81 +480,40 @@ async function shareSafe(t, fileOnly = false) {
   if (t === 'gps') {
     text += `精度: ${d.accStr}\n`;
     text += `海拔: ${d.altStr}\n`;
-    text += `${globalInfo.weather} | 風速: ${globalInfo.wind}\n`;
+    // V51: 確保天氣資訊不含重複字眼
+    let weatherStr = globalInfo.weather.replace('天氣:', '').trim();
+    let windStr = globalInfo.wind.replace('風速:', '').trim();
+    text += `天氣: ${weatherStr} | 風速: ${windStr}\n`;
     text += `${sunInfoText}\n`;
   }
   text += `──────────────\n`;
   text += `⛰️ Topo: ${topoUrl}\n\n`;
   text += `🌏 Google: ${gmapUrl}`;
 
-  // 2. 產生 GPX 檔案
   const time = new Date().toISOString();
   const gpxContent = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?><gpx version="1.1" creator="YuushiemmTool"><wpt lat="${d.lat}" lon="${d.lon}"><time>${time}</time><name>Point</name></wpt></gpx>`;
   const filename = `point_${d.lat.toFixed(5)}_${d.lon.toFixed(5)}.gpx`;
   const file = new File([gpxContent], filename, { type: 'application/gpx+xml' });
 
-  // 3. 嘗試原生分享 (Try)
   if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       let shareData = { files: [file] };
-      if (!fileOnly) {
-        shareData.title = "位置分享";
-        shareData.text = text;
-      }
+      if (!fileOnly) { shareData.title = "位置分享"; shareData.text = text; }
       await navigator.share(shareData);
     } catch (err) {
-      console.log("分享失敗", err);
-      // 失敗時默默執行 Fallback，不跳 Alert 嚇人
-      if (err.name !== 'AbortError') {
-        fallbackShare(file, text, fileOnly);
-      }
+      if (err.name !== 'AbortError') fallbackShare(file, text, fileOnly);
     }
   } else {
-    // 不支援時直接 Fallback
     fallbackShare(file, text, fileOnly);
   }
 }
 
-// 靜默降級處理 (下載檔案 + 跳轉 LINE)
 function fallbackShare(file, text, fileOnly) {
-  // 1. 默默下載檔案
-  const url = URL.createObjectURL(file);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-
-  // 2. 如果不是只要檔案，就跳轉 LINE
+  forceDownload(file);
   if (!fileOnly) {
-    // 稍微延遲讓下載開始，再跳轉
     setTimeout(() => {
       window.location.href = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`;
     }, 500);
-  }
-}
-
-// 軌跡分享 (V50 修正)
-function exportTrackGPX() {
-  if (trackHistory.length === 0) return alert("無記錄");
-  
-  let content = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?><gpx version="1.1" creator="YuushiemmTool"><trk><trkseg>`;
-  trackHistory.forEach(p => content += `<trkpt lat="${p.lat}" lon="${p.lon}"><ele>${p.alt}</ele><time>${new Date(p.time).toISOString()}</time></trkpt>`);
-  content += `</trkseg></trk></gpx>`;
-  
-  const filename = `track_${new Date().toISOString().slice(0,10)}.gpx`;
-  const file = new File([content], filename, { type: 'application/gpx+xml' });
-  
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-    navigator.share({
-      files: [file], title: "軌跡匯出", text: "我的軌跡"
-    }).catch(err => {
-      if(err.name !== 'AbortError') fallbackShare(file, "", true);
-    });
-  } else {
-    fallbackShare(file, "", true);
   }
 }
 
@@ -500,25 +523,12 @@ function takeSnapshot() {
   const btn = document.querySelector('.btn-shot');
   const originalText = btn.innerText;
   btn.innerText = "截圖中...";
-  
-  html2canvas(document.getElementById('dashboard'), {
-    scale: 2,
-    useCORS: true, 
-    allowTaint: true,
-    logging: false
-  }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = `map_${new Date().getTime()}.png`;
-    link.href = canvas.toDataURL();
-    link.click();
-    btn.innerText = originalText;
-  }).catch(err => {
-    alert("截圖失敗，請手動截圖");
-    btn.innerText = originalText;
-  });
+  html2canvas(document.getElementById('dashboard'), { scale: 2, useCORS: true, allowTaint: true, logging: false }).then(canvas => {
+    const link = document.createElement('a'); link.download = `map_${new Date().getTime()}.png`; link.href = canvas.toDataURL(); link.click(); btn.innerText = originalText;
+  }).catch(err => { alert("截圖受限，請手動截圖"); btn.innerText = originalText; });
 }
 
-// === 日出日落 ===
+// === V51: 日出日落 (中文文字版) ===
 function calculateSunTimes(lat, lng) {
   const alertBox = document.getElementById('sunInfo');
   if (typeof SunCalc === 'undefined') { alertBox.innerHTML = "時間庫未載入"; return; }
@@ -531,7 +541,8 @@ function calculateSunTimes(lat, lng) {
   
   sunInfoText = `日出: ${sunriseStr} | 日落: ${sunsetStr}`; 
   alertBox.style.display = 'inline-block';
-  alertBox.innerHTML = `🌅 ${sunriseStr} | 🌇 ${sunsetStr}`;
+  // V51: 改為中文顯示，無圖示
+  alertBox.innerHTML = `日出 ${sunriseStr} | 日落 ${sunsetStr}`;
   
   if (now < times.sunrise || now > times.sunset) {
     alertBox.style.background = "#37474f"; alertBox.style.color = "#cfd8dc"; 
@@ -555,40 +566,20 @@ async function runAiDiagnosis(p, error) {
       browserBtn.classList.add('urgent'); shareBtn.classList.add('dimmed');   
       document.getElementById('dashboard').style.opacity = '0.5';
     } else {
-      if (error.code === 1) { 
-        permGuide.style.display = 'block'; aiBox.style.display = 'none'; document.getElementById('dashboard').style.opacity = '0.5';
-      } else {
-        aiBox.innerHTML = `⚠️ 定位錯誤`;
-        aiBox.style.borderColor = "orange"; aiBox.style.background = "#fff3e0";
-      }
+      if (error.code === 1) { permGuide.style.display = 'block'; aiBox.style.display = 'none'; document.getElementById('dashboard').style.opacity = '0.5'; }
+      else { aiBox.innerHTML = `⚠️ 定位錯誤`; aiBox.style.borderColor = "orange"; aiBox.style.background = "#fff3e0"; }
     }
     return;
   }
-
   permGuide.style.display = 'none'; aiBox.style.display = 'block'; document.getElementById('dashboard').style.opacity = '1';
   const acc = Math.round(p.accuracy);
   browserBtn.classList.remove('urgent'); shareBtn.classList.remove('dimmed');
 
-  if (isDesktop) {
-    aiBox.innerHTML = `💻 <b>電腦版 (精度 ±${acc}m)</b><br>✅ 定位成功`;
-    aiBox.style.borderColor = "#2196f3"; aiBox.style.background = "#e3f2fd"; aiBox.style.color = "#0d47a1";
-    return;
-  }
-
-  if (acc <= 30) {
-    aiBox.innerHTML = `✅ 訊號穩定 (±${acc}m)<br>👆 <b>請按上方【分享】</b>`;
-    aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32";
-  } else {
-    if (isLine) {
-      aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議按【瀏覽器開啟】</b>`;
-      aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315";
-      browserBtn.classList.add('urgent'); 
-    } else {
-      let advice = "修正飄移中...";
-      if (window.ai) { try { const s = await window.ai.createTextSession(); advice = await s.prompt("GPS誤差"+acc+"米，安撫長輩說AI正在修正訊號，請稍等或先分享。10字內。"); } catch(e){} }
-      aiBox.innerHTML = `📡 訊號鎖定中... (±${acc}m)<br>${advice}<br>或者 👆 <b>先按上方【分享】</b>`;
-      aiBox.style.borderColor = "#ff9800"; aiBox.style.background = "#fff3e0"; aiBox.style.color = "#ef6c00";
-    }
+  if (isDesktop) { aiBox.innerHTML = `💻 <b>電腦版 (精度 ±${acc}m)</b><br>✅ 定位成功`; aiBox.style.borderColor = "#2196f3"; aiBox.style.background = "#e3f2fd"; aiBox.style.color = "#0d47a1"; return; }
+  if (acc <= 30) { aiBox.innerHTML = `✅ 訊號穩定 (±${acc}m)<br>👆 <b>請按上方【分享】</b>`; aiBox.style.borderColor = "#4caf50"; aiBox.style.background = "#e8f5e9"; aiBox.style.color = "#2e7d32"; }
+  else {
+    if (isLine) { aiBox.innerHTML = `⚠️ <b>LINE 內訊號不佳 (±${acc}m)</b><br>👆 <b>建議按【瀏覽器開啟】</b>`; aiBox.style.borderColor = "#ff5722"; aiBox.style.background = "#fbe9e7"; aiBox.style.color = "#d84315"; browserBtn.classList.add('urgent'); }
+    else { let advice = "修正飄移中..."; if (window.ai) { try { const s = await window.ai.createTextSession(); advice = await s.prompt("GPS誤差"+acc+"米，安撫長輩說AI正在修正訊號，請稍等或先分享。10字內。"); } catch(e){} } aiBox.innerHTML = `📡 訊號鎖定中... (±${acc}m)<br>${advice}<br>或者 👆 <b>先按上方【分享】</b>`; aiBox.style.borderColor = "#ff9800"; aiBox.style.background = "#fff3e0"; aiBox.style.color = "#ef6c00"; }
   }
 }
 
@@ -611,111 +602,25 @@ function updateNavDisplay() {
   document.getElementById('navBearing').innerText = `方位: ${Math.round(bearingToTarget)}°`;
 }
 
-function initCompass() {
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
-    window.addEventListener('deviceorientation', handleOrientation);
-  }
-}
-function requestPermissionIOS() {
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission().then(r => {
-      if (r === 'granted') {
-        window.addEventListener('deviceorientation', handleOrientation);
-        alert("羅盤已啟用");
-      }
-    }).catch(console.error);
-  }
-}
-function handleOrientation(e) {
-  let h = null;
-  if (e.webkitCompassHeading) h = e.webkitCompassHeading;
-  else if (e.alpha !== null) h = 360 - e.alpha; 
-  if (h !== null) targetHeading = (h + compassOffset + 360) % 360;
-}
-function animateCompass() {
-  let diff = targetHeading - currentHeading;
-  while (diff < -180) diff += 360;
-  while (diff > 180) diff -= 360;
-  if (Math.abs(diff) > 0.5) currentHeading += diff * 0.1;
-  else currentHeading = targetHeading;
-  
-  const arrow = document.getElementById('compassArrow');
-  if (arrow) arrow.style.transform = `rotate(${-currentHeading}deg)`;
-  
-  const navArrow = document.getElementById('navArrow');
-  if (navArrow && navLat !== 0) {
-    const rel = bearingToTarget - currentHeading;
-    navArrow.style.transform = `rotate(${rel}deg)`;
-  }
-  requestAnimationFrame(animateCompass);
-}
+function initCompass() { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') window.addEventListener('deviceorientation', handleOrientation); }
+function requestPermissionIOS() { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') { DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') { window.addEventListener('deviceorientation', handleOrientation); alert("羅盤已啟用"); } }).catch(console.error); } }
+function handleOrientation(e) { let h = null; if (e.webkitCompassHeading) h = e.webkitCompassHeading; else if (e.alpha !== null) h = 360 - e.alpha; if (h !== null) targetHeading = (h + compassOffset + 360) % 360; }
+function animateCompass() { let diff = targetHeading - currentHeading; while (diff < -180) diff += 360; while (diff > 180) diff -= 360; if (Math.abs(diff) > 0.5) currentHeading += diff * 0.1; else currentHeading = targetHeading; const arrow = document.getElementById('compassArrow'); if (arrow) arrow.style.transform = `rotate(${-currentHeading}deg)`; const navArrow = document.getElementById('navArrow'); if (navArrow && navLat !== 0) { const rel = bearingToTarget - currentHeading; navArrow.style.transform = `rotate(${rel}deg)`; } requestAnimationFrame(animateCompass); }
 
 // === 分頁切換 ===
 function switchTab(t) { 
   document.querySelectorAll('.tab-btn, .page-section').forEach(el => el.classList.remove('active')); 
-  
-  if(t==='locate') { 
-    document.querySelectorAll('.tab-btn')[0].classList.add('active'); 
-    document.getElementById('page-locate').classList.add('active'); 
-    if(map) setTimeout(() => { map.invalidateSize(); map.setZoom(16); }, 200); 
-  } else if(t==='track') { 
-    document.querySelectorAll('.tab-btn')[1].classList.add('active'); 
-    document.getElementById('page-track').classList.add('active'); 
-    updateTrackUI(); 
-    initTrackMap(); 
-    if(trackMap) {
-      setTimeout(() => {
-        trackMap.invalidateSize();
-        if (trackHistory.length > 0) {
-           const latlngs = trackHistory.map(p => [p.lat, p.lon]);
-           const bounds = L.latLngBounds(latlngs);
-           trackMap.fitBounds(bounds);
-           setTimeout(() => trackMap.setZoom(trackMap.getZoom() - 1), 100);
-        }
-      }, 100);
-    }
-  } else { 
-    document.querySelectorAll('.tab-btn')[2].classList.add('active'); 
-    document.getElementById('page-convert').classList.add('active'); 
-  }
+  if(t==='locate') { document.querySelectorAll('.tab-btn')[0].classList.add('active'); document.getElementById('page-locate').classList.add('active'); if(map) setTimeout(() => { map.invalidateSize(); map.setZoom(16); }, 200); } 
+  else if(t==='track') { document.querySelectorAll('.tab-btn')[1].classList.add('active'); document.getElementById('page-track').classList.add('active'); updateTrackUI(); initTrackMap(); if(trackMap) { setTimeout(() => { trackMap.invalidateSize(); if (trackHistory.length > 0) { const latlngs = trackHistory.map(p => [p.lat, p.lon]); const bounds = L.latLngBounds(latlngs); trackMap.fitBounds(bounds); setTimeout(() => trackMap.setZoom(trackMap.getZoom() - 1), 100); } }, 100); } } 
+  else { document.querySelectorAll('.tab-btn')[2].classList.add('active'); document.getElementById('page-convert').classList.add('active'); }
 }
 
 // === 轉換邏輯 ===
-function convertFrom(t) {
-  try {
-    let lat=0,lon=0;
-    if(t==='dd'){
-        lat=parseFloat(document.getElementById('ddN').value);
-        lon=parseFloat(document.getElementById('ddE').value);
-    } else if(t==='dms'){
-        lat=parseFloat(document.getElementById('dmsN_d').value||0)+parseFloat(document.getElementById('dmsN_m').value||0)/60+parseFloat(document.getElementById('dmsN_s').value||0)/3600; 
-        lon=parseFloat(document.getElementById('dmsE_d').value||0)+parseFloat(document.getElementById('dmsE_m').value||0)/60+parseFloat(document.getElementById('dmsE_s').value||0)/3600;
-    } else if(t==='dmm'){
-        lat=parseFloat(document.getElementById('dmmN_d').value||0)+parseFloat(document.getElementById('dmmN_m').value||0)/60; 
-        lon=parseFloat(document.getElementById('dmmE_d').value||0)+parseFloat(document.getElementById('dmmE_m').value||0)/60;
-    }
-    if(isNaN(lat)||isNaN(lon)) throw Error; 
-    formLat=lat; formLon=lon; 
-    updateAllFields(lat,lon); 
-    alert("轉換成功！");
-  } catch(e) { alert("數值錯誤"); }
-}
-
-function updateAllFields(lat, lon) {
-  lat = Math.abs(lat); lon = Math.abs(lon);
-  document.getElementById('ddN').value = formLat.toFixed(6); document.getElementById('ddE').value = formLon.toFixed(6);
-  const dmmN_d = Math.floor(lat), dmmN_m = (lat-dmmN_d)*60; const dmmE_d = Math.floor(lon), dmmE_m = (lon-dmmE_d)*60;
-  document.getElementById('dmmN_d').value = dmmN_d; document.getElementById('dmmN_m').value = dmmN_m.toFixed(4); document.getElementById('dmmE_d').value = dmmE_d; document.getElementById('dmmE_m').value = dmmE_m.toFixed(4);
-  const dmsN_d = Math.floor(lat), dmsN_m_f = (lat-dmsN_d)*60, dmsN_m = Math.floor(dmsN_m_f), dmsN_s = (dmsN_m_f-dmsN_m)*60;
-  const dmsE_d = Math.floor(lon), dmsE_m_f = (lon-dmsE_d)*60, dmsE_m = Math.floor(dmsE_m_f), dmsE_s = (dmsE_m_f-dmsE_m)*60;
-  document.getElementById('dmsN_d').value=dmsN_d; document.getElementById('dmsN_m').value=dmsN_m; document.getElementById('dmsN_s').value=dmsN_s.toFixed(2); document.getElementById('dmsE_d').value=dmsE_d; document.getElementById('dmsE_m').value=dmsE_m; document.getElementById('dmsE_s').value=dmsE_s.toFixed(2);
-}
+function convertFrom(t) { try { let lat=0,lon=0; if(t==='dd'){ lat=parseFloat(document.getElementById('ddN').value); lon=parseFloat(document.getElementById('ddE').value); } else if(t==='dms'){ lat=parseFloat(document.getElementById('dmsN_d').value||0)+parseFloat(document.getElementById('dmsN_m').value||0)/60+parseFloat(document.getElementById('dmsN_s').value||0)/3600; lon=parseFloat(document.getElementById('dmsE_d').value||0)+parseFloat(document.getElementById('dmsE_m').value||0)/60+parseFloat(document.getElementById('dmsE_s').value||0)/3600; } else if(t==='dmm'){ lat=parseFloat(document.getElementById('dmmN_d').value||0)+parseFloat(document.getElementById('dmmN_m').value||0)/60; lon=parseFloat(document.getElementById('dmmE_d').value||0)+parseFloat(document.getElementById('dmmE_m').value||0)/60; } if(isNaN(lat)||isNaN(lon)) throw Error; formLat=lat; formLon=lon; updateAllFields(lat,lon); alert("轉換成功！"); } catch(e) { alert("數值錯誤"); } }
+function updateAllFields(lat, lon) { lat = Math.abs(lat); lon = Math.abs(lon); document.getElementById('ddN').value = formLat.toFixed(6); document.getElementById('ddE').value = formLon.toFixed(6); const dmmN_d = Math.floor(lat), dmmN_m = (lat-dmmN_d)*60; const dmmE_d = Math.floor(lon), dmmE_m = (lon-dmmE_d)*60; document.getElementById('dmmN_d').value = dmmN_d; document.getElementById('dmmN_m').value = dmmN_m.toFixed(4); document.getElementById('dmmE_d').value = dmmE_d; document.getElementById('dmmE_m').value = dmmE_m.toFixed(4); const dmsN_d = Math.floor(lat), dmsN_m_f = (lat-dmsN_d)*60, dmsN_m = Math.floor(dmsN_m_f), dmsN_s = (dmsN_m_f-dmsN_m)*60; const dmsE_d = Math.floor(lon), dmsE_m_f = (lon-dmsE_d)*60, dmsE_m = Math.floor(dmsE_m_f), dmsE_s = (dmsE_m_f-dmsE_m)*60; document.getElementById('dmsN_d').value=dmsN_d; document.getElementById('dmsN_m').value=dmsN_m; document.getElementById('dmsN_s').value=dmsN_s.toFixed(2); document.getElementById('dmsE_d').value=dmsE_d; document.getElementById('dmsE_m').value=dmsE_m; document.getElementById('dmsE_s').value=dmsE_s.toFixed(2); }
 
 // === 其他輔助 ===
-function initMap() { 
-  map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); 
-  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18, crossOrigin: true, attribution: 'Map data: © OSM, SRTM | Style: © OpenTopoMap' }).addTo(map); 
-}
+function initMap() { map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18, crossOrigin: true, attribution: 'Map data: © OSM, SRTM | Style: © OpenTopoMap' }).addTo(map); }
 function toggleMapLock() { const btn = document.querySelector('.map-lock-btn'); isMapLocked = !isMapLocked; if (isMapLocked) { map.dragging.disable(); map.touchZoom.disable(); btn.innerText = "🔓 解鎖地圖"; btn.style.background = "rgba(0,0,0,0.6)"; } else { map.dragging.enable(); map.touchZoom.enable(); btn.innerText = "🔒 鎖定地圖"; btn.style.background = "#E91E63"; } }
 function getDistance(lat1, lon1, lat2, lon2) { const R = 6371e3; const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180; const Δφ = (lat2-lat1) * Math.PI/180, Δλ = (lon2-lon1) * Math.PI/180; const a = Math.sin(Δφ/2)*Math.sin(Δφ/2) + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)*Math.sin(Δλ/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 function getBearing(startLat, startLng, destLat, destLng) { startLat = toRad(startLat); startLng = toRad(startLng); destLat = toRad(destLat); destLng = toRad(destLng); const y = Math.sin(destLng - startLng) * Math.cos(destLat); const x = Math.cos(startLat) * Math.sin(destLat) - Math.sin(startLat) * Math.cos(destLat) * Math.cos(destLng - startLng); return (toDeg(Math.atan2(y, x)) + 360) % 360; }
@@ -723,8 +628,8 @@ function toRad(deg) { return deg * Math.PI / 180; }
 function toDeg(rad) { return rad * 180 / Math.PI; }
 function getCardinal(angle) { const d=['北','東北','東','東南','南','西南','西','西北']; return d[Math.round(angle/45)%8]; }
 function ddToDms(lat, lon) { const toDms = (val, isLat) => { const dir = val >= 0 ? (isLat ? 'N' : 'E') : (isLat ? 'S' : 'W'); val = Math.abs(val); const d = Math.floor(val); const m = Math.floor((val - d) * 60); const s = ((val - d) * 60 - m) * 60; return `${d}°${m}'${s.toFixed(1)}"${dir}`; }; return `${toDms(lat, true)}, ${toDms(lon, false)}`; }
-function openGoogleMap(t) { const d=(t==='gps')?{lat:gpsLat,lon:gpsLon}:(t==='nav'?{lat:navLat,lon:navLon}:{lat:formLat,lon:formLon}); if(d.lat) window.open(`https://www.google.com/maps?q=${d.lat},${d.lon}`); }
-function openTopoMap(t) { const d=(t==='gps')?{lat:gpsLat,lon:gpsLon}:(t==='nav'?{lat:navLat,lon:navLon}:{lat:formLat,lon:formLon}); if(d.lat) window.open(`https://opentopomap.org/#marker=15/${d.lat}/${d.lon}`); }
+function openGoogleMap(t) { const d=getSource(t); if(d.lat) window.open(`https://www.google.com/maps?q=${d.lat},${d.lon}`); }
+function openTopoMap(t) { const d=getSource(t); if(d.lat) window.open(`https://opentopomap.org/#marker=15/${d.lat}/${d.lon}`); }
 function saveTrackPoint(lat, lon, alt, acc) { if(trackHistory.length>0 && getDistance(trackHistory[trackHistory.length-1].lat, trackHistory[trackHistory.length-1].lon, lat, lon)<15)return; trackHistory.push({lat,lon,alt,acc,time:new Date().toLocaleString()}); localStorage.setItem('track_history', JSON.stringify(trackHistory)); }
 function updateTrackUI() { const l=document.getElementById('trackList'); l.innerHTML=''; const s=Math.min(trackHistory.length,50); for(let i=trackHistory.length-1;i>=trackHistory.length-s;i--){const p=trackHistory[i]; const d=document.createElement('div'); d.className='track-item'; d.innerHTML=`<div class="track-info"><div class="track-time">${p.time}</div><div class="track-coord">${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</div></div><button class="btn-nav-to" onclick="setNavTarget(${p.lat},${p.lon})">導航</button>`; l.appendChild(d);} }
 function initTrackMap() { if(trackMap)trackMap.remove(); trackMap=L.map('trackMap',{zoomControl:false}).setView([23.6,120.9],7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(trackMap); if(trackHistory.length>0){const ll=trackHistory.map(p=>[p.lat,p.lon]); L.polyline(ll,{color:'red'}).addTo(trackMap); trackMap.fitBounds(ll);} }
