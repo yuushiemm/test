@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="author" content="yuushiemm">
-<title>全能定位轉換助手 V61 Guide @yuushiemm</title>
+<title>全能定位轉換助手 V62 Safe-Guide @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -21,7 +21,7 @@
   }
   .container { max-width: 600px; margin: 0 auto; padding-top: 5px; position: relative; min-height: 100vh; }
   
-  /* === V61: 溫暖的 AI 引導框 === */
+  /* === AI 引導框 (V62: 針對電腦版與安全引導優化) === */
   #aiHintBox { 
     display: block; margin-bottom: 10px; padding: 15px; 
     border-radius: 12px; font-weight: bold; text-align: center; 
@@ -32,14 +32,12 @@
   }
 
   /* === 按鈕動畫特效 === */
-  /* 紅色緊急閃爍 (瀏覽器開啟) */
   .urgent-flash { 
     animation: flash-red 1s infinite alternate; 
     border: 2px solid #ff5252 !important;
   }
   @keyframes flash-red { from { background-color: #546e7a; box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.7); } to { background-color: #ff5722; box-shadow: 0 0 10px 5px rgba(255, 82, 82, 0.3); } }
 
-  /* 綠色分享閃爍 (分享定位) */
   .share-flash {
     animation: flash-green 0.8s infinite alternate;
     border: 3px solid #69f0ae !important;
@@ -157,6 +155,7 @@
   .track-list { margin-top: 10px; max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #eee; }
   .track-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
   .track-info { font-size: 13px; line-height: 1.3; }
+  .track-coord { font-family: monospace; color: #666; font-size: 12px; }
   .track-actions { display: flex; gap: 8px; }
   .btn-nav-to { background: #009688; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; }
   .btn-del-point { background: #ef5350; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; }
@@ -248,11 +247,16 @@
   <div id="page-track" class="page-section">
     <h3 style="text-align:center; margin:10px 0;">👣 歷史軌跡 (被動記錄)</h3>
     <div id="navPanel">
-      <div class="nav-header"><span>🚩 目標導航</span><span onclick="closeNav()" style="cursor:pointer; font-size:20px;">✕</span></div>
+      <div class="nav-header">
+        <span>🚩 目標導航</span>
+        <span onclick="closeNav()" style="cursor:pointer; font-size:20px;">✕</span>
+      </div>
       <div id="navArrow">⬆️</div>
       <div style="font-size:20px; font-weight:bold;" id="navDistance">-- m</div>
       <div id="navBearing" style="opacity:0.8; font-size:14px;">方位: --</div>
-      <div style="display:flex; gap:10px; margin-top:10px;"><button class="big-btn btn-map" onclick="openGoogleMap('nav')">Google 導航</button></div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="big-btn btn-map" onclick="openGoogleMap('nav')">Google 導航</button>
+      </div>
     </div>
     <div id="trackMap"></div>
     <div style="margin-top:10px; display:flex; gap:10px;">
@@ -317,7 +321,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V61 Guide (Warm AI & LINE Flash)
+ * 全能定位轉換助手 V62 Safe-Guide
  * Copyright (c) 2026 yuushiemm
  */
 
@@ -357,7 +361,6 @@ window.onload=function(){
   requestAnimationFrame(animateCompass);
 };
 
-// === V61: LINE 偵測 ===
 function checkLineEnvironment() {
   isLine = /Line/i.test(navigator.userAgent);
   if (isLine) {
@@ -369,30 +372,35 @@ function checkLineEnvironment() {
   }
 }
 
-// === V61: 溫暖 AI 邏輯 ===
+// === V62: AI 邏輯修正 ===
 function updateAiHint(acc) {
   const box = document.getElementById('aiHintBox');
   const shareBtn = document.getElementById('shareBtn');
   
+  // 1. 電腦版偵測
+  if (isDesktop) {
+    box.innerHTML = `💻 <b>偵測為電腦版本 (精度 ±${acc}m)</b><br>定位可能基於 IP，僅供參考。`;
+    box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
+    shareBtn.classList.remove('share-flash');
+    return;
+  }
+
+  // 2. 行動版邏輯
   if (acc <= 30) {
-    // 階段三：精準
     box.innerHTML = `✅ <b>衛星已鎖定 (±${acc}m)！</b><br>位置變精準了，請再次按下分享！`;
     box.style.borderColor = "#4caf50"; box.style.background = "#e8f5e9"; box.style.color = "#2e7d32";
-    shareBtn.classList.add('share-flash'); // 綠色閃爍
-    if(isLine) document.getElementById('browserBtn').classList.remove('urgent-flash'); // 精準了就不用一直催換瀏覽器
+    shareBtn.classList.add('share-flash'); 
+    if(isLine) document.getElementById('browserBtn').classList.remove('urgent-flash');
   } else if (acc <= 150) {
-    // 階段二：普通/微弱
-    box.innerHTML = `⚠️ 訊號微弱 (±${acc}m)，請移至空曠處。<br>但請<b>先按分享</b>，讓搜救隊知道大概位置！`;
+    // V62: 修改話術，引導看向天空
+    box.innerHTML = `⚠️ 訊號微弱 (±${acc}m)，請盡量把手機朝向看的到天空的地方...<br>但請<b>先按分享</b>，讓搜救人員知道大概位置！`;
     box.style.borderColor = "#ff9800"; box.style.background = "#fff3e0"; box.style.color = "#ef6c00";
-    shareBtn.classList.add('share-flash'); // 還是要閃，催促分享
+    shareBtn.classList.add('share-flash'); 
   } else {
-    // 階段一：剛開始或很差
     box.innerHTML = `📡 正在搜尋衛星 (±${acc}m)...<br>請在空曠處稍等，或先按分享回報。`;
     box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
     shareBtn.classList.remove('share-flash');
   }
-  
-  // 記錄最佳精度，如果突然變好很多，可以再次提醒 (邏輯預留)
   lastBestAccuracy = Math.min(lastBestAccuracy, acc);
 }
 
@@ -413,7 +421,6 @@ function handlePositionSuccess(p) {
   gpsLat = c.latitude; gpsLon = c.longitude;
   const acc = Math.round(c.accuracy);
   
-  // Update AI & Buttons
   updateAiHint(acc);
 
   document.getElementById('gpsDisplayVal').innerHTML = `<span>${gpsLat.toFixed(5)},</span> <span>${gpsLon.toFixed(5)}</span>`;
@@ -446,7 +453,7 @@ function handlePositionError(e) {
   }
 }
 
-// ... (以下保留 V59 的完整功能函數：SOS, TWD, GPX, Map Fix) ...
+// ... (以下維持 V61 的完整功能函數，無變動以確保穩定) ...
 function sanitizeTrackData() { trackHistory = trackHistory.map(p => { let t = new Date(p.time); if(isNaN(t.getTime())) t=new Date(); p.time=t.toISOString(); return p; }); localStorage.setItem('track_history', JSON.stringify(trackHistory)); }
 function initMap() { map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 16, crossOrigin: true }).addTo(map); }
 function initTrackMap() { if(trackMap) trackMap.remove(); trackMap = L.map('trackMap', {zoomControl: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 16, crossOrigin: true }).addTo(trackMap); }
