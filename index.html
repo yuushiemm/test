@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="author" content="yuushiemm">
-<title>全能定位轉換助手 V56 Final @yuushiemm</title>
+<title>全能定位轉換助手 V57 Final @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -89,6 +89,7 @@
   #map { 
     height: 180px; width: 100%; border-radius: 8px; margin-top: 8px; 
     border: 1px solid rgba(255,255,255,0.3); z-index: 1; background: #ddd; 
+    display: block;
   }
   .map-lock-btn { 
     position: absolute; bottom: 8px; right: 8px; 
@@ -124,7 +125,7 @@
   .btn-dl { background-color: #607d8b; }
   
   /* Page 2: 軌跡 */
-  #trackMap { height: 250px; width: 100%; border-radius: 8px; border: 2px solid #ddd; z-index: 1; background: #eee; }
+  #trackMap { height: 280px; width: 100%; border-radius: 8px; border: 2px solid #ddd; z-index: 1; background: #eee; }
   .track-list { margin-top: 10px; max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #eee; }
   .track-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
   .track-info { font-size: 13px; line-height: 1.3; }
@@ -293,7 +294,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V56 Final (Zoom Fix)
+ * 全能定位轉換助手 V57 Final (Branding Update)
  * Copyright (c) 2026 yuushiemm
  */
 
@@ -416,7 +417,7 @@ function switchTab(t) {
     updateTrackUI(); 
     initTrackMap(); 
     
-    // 強制重繪軌跡地圖
+    // V56: 強制重繪軌跡地圖
     if(trackMap) { 
       setTimeout(() => { 
         trackMap.invalidateSize(); 
@@ -432,7 +433,7 @@ function switchTab(t) {
            L.circleMarker(latlngs[0], {color: 'green', radius: 6}).addTo(trackMap).bindPopup("起點");
            L.circleMarker(latlngs[latlngs.length-1], {color: 'blue', radius: 6}).addTo(trackMap).bindPopup("最新");
            
-           // V56 Fix: 限制最大縮放，避免進入無圖層的虛空
+           // V56 Fix: 限制最大縮放 maxZoom: 16，避免進入無圖層的灰色區域
            const bounds = L.latLngBounds(latlngs);
            trackMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
         } 
@@ -451,13 +452,14 @@ function updateAllFields(lat, lon) { lat = Math.abs(lat); lon = Math.abs(lon); d
 // === 其他輔助 ===
 function initMap() { 
   map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); 
-  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18, crossOrigin: true, attribution: 'Map data: © OSM, SRTM | Style: © OpenTopoMap' }).addTo(map); 
+  // V56: MaxZoom 16 (Topo Safe Limit)
+  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 16, crossOrigin: true, attribution: 'Map data: © OSM, SRTM | Style: © OpenTopoMap' }).addTo(map); 
 }
-// V55: 軌跡地圖初始化
+// V56: 軌跡地圖初始化 (MaxZoom 16)
 function initTrackMap() { 
   if(trackMap) trackMap.remove(); 
   trackMap = L.map('trackMap', {zoomControl: false}).setView([23.6, 120.9], 7); 
-  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18, crossOrigin: true }).addTo(trackMap);
+  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 16, crossOrigin: true }).addTo(trackMap);
 }
 
 function toggleMapLock() { const btn = document.querySelector('.map-lock-btn'); isMapLocked = !isMapLocked; if (isMapLocked) { map.dragging.disable(); map.touchZoom.disable(); btn.innerText = "🔓 解鎖地圖"; btn.style.background = "rgba(0,0,0,0.6)"; } else { map.dragging.enable(); map.touchZoom.enable(); btn.innerText = "🔒 鎖定地圖"; btn.style.background = "#E91E63"; } }
@@ -497,11 +499,17 @@ function exportTrackGPX() {
 function forceDownloadGPX(t) { const d = getSource(t); if(!d.lat) return alert("無座標"); const time = new Date().toISOString(); const content = `<?xml version="1.0"?><gpx version="1.1"><wpt lat="${d.lat}" lon="${d.lon}"><time>${time}</time><name>Point</name></wpt></gpx>`; const file = new File([content], "point.gpx", {type: "text/xml"}); safeDownload(file); }
 function safeDownload(file) { try { const url = URL.createObjectURL(file); const a = document.createElement("a"); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } catch (e) { alert("下載受限"); } }
 function deletePoint(index) { if (confirm("刪除此點?")) { trackHistory.splice(index, 1); localStorage.setItem('track_history', JSON.stringify(trackHistory)); switchTab('track'); } }
+// V57: 更新標題
 async function shareSafe(t, fileOnly = false) {
   const d = getSource(t); if (!d.lat) return alert("無座標");
   const dms = ddToDms(d.lat, d.lon); const topoUrl = `https://opentopomap.org/#marker=16/${d.lat}/${d.lon}`; const gmapUrl = `https://www.google.com/maps?q=${d.lat},${d.lon}`;
-  let text = `📍 位置分享\n──────────────\n經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n度分秒: ${dms}\n`;
-  if (t === 'gps') { let weatherStr = globalInfo.weather.replace('天氣:', '').trim(); let windStr = globalInfo.wind.replace('風速:', '').trim(); text += `精度: ${d.accStr}\n海拔: ${d.altStr}\n天氣: ${weatherStr} | 風速: ${windStr}\n${sunInfoText}\n`; }
+  // V57: 品牌識別標題
+  let text = `📍 全能定位轉換助手 位置分享\n──────────────\n經緯: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}\n度分秒: ${dms}\n`;
+  if (t === 'gps') { 
+    let weatherStr = globalInfo.weather.replace(/^天氣:\s*/, '').trim(); 
+    let windStr = globalInfo.wind.replace(/^風速:\s*/, '').trim(); 
+    text += `精度: ${d.accStr}\n海拔: ${d.altStr}\n天氣: ${weatherStr} | 風速: ${windStr}\n${sunInfoText}\n`; 
+  }
   text += `──────────────\n⛰️ Topo: ${topoUrl}\n\n🌏 Google: ${gmapUrl}`;
   const time = new Date().toISOString(); const content = `<?xml version="1.0"?><gpx version="1.1"><wpt lat="${d.lat}" lon="${d.lon}"><time>${time}</time><name>Point</name></wpt></gpx>`;
   const file = new File([content], `point.gpx`, { type: 'text/xml' });
