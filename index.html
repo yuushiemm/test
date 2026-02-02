@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="author" content="yuushiemm">
-<title>全能定位轉換助手 V63 Logic-Final @yuushiemm</title>
+<title>全能定位轉換助手 V64 Map-Render-Fix @yuushiemm</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -153,7 +153,16 @@
   .sos-hint { color: #ccc; margin-top: 20px; font-size: 20px; }
 
   /* Page 2 & 3 */
-  #trackMap { height: 280px; width: 100%; border-radius: 8px; border: 2px solid #ddd; z-index: 1; background: #eee; }
+  /* V64 Fix: 增加高度並設定 overflow 以解決渲染問題 */
+  #trackMap { 
+    height: 350px; /* 增加高度 */
+    width: 100%; 
+    border-radius: 8px; 
+    border: 2px solid #ddd; 
+    z-index: 1; 
+    background: #f0f0f0; 
+    overflow: hidden; /* 防止溢出 */
+  }
   .track-list { margin-top: 10px; max-height: 300px; overflow-y: auto; background: white; border-radius: 8px; border: 1px solid #eee; }
   .track-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
   .track-info { font-size: 13px; line-height: 1.3; }
@@ -204,9 +213,8 @@
     </div>
 
     <div id="aiHintBox">
-      👋 您好，我是您的搜救助手。<br>協助您脫困中...<br>
-      請將手機朝向天空...<br>
-      👇 <b>等待定位後，請按下【分享定位】按鈕</b>
+      👋 您好！我是您的搜救助手。<br>
+      請依照指示操作，我會協助您脫困。
     </div>
 
     <div class="primary-action-area">
@@ -326,7 +334,7 @@
 
 <script>
 /**
- * 全能定位轉換助手 V63 Logic-Final
+ * 全能定位轉換助手 V64 Map-Render-Fix
  * Copyright (c) 2026 yuushiemm
  */
 
@@ -355,7 +363,9 @@ const LON0=121, K0=0.9999, DX=250000, DY=0;
 window.onload=function(){
   checkLineEnvironment();
   sanitizeTrackData();
-  initMap(); initTrackMap(); 
+  initMap(); 
+  // V64: 軌跡地圖初始化，但先不顯示內容，等切換時再重繪
+  initTrackMap(); 
   startSmartLocate(); 
   
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(map)map.invalidateSize();if(trackMap)trackMap.invalidateSize();navigator.geolocation.getCurrentPosition(handlePositionSuccess,null,{enableHighAccuracy:true});}});
@@ -368,10 +378,12 @@ window.onload=function(){
 
 function checkLineEnvironment() {
   isLine = /Line/i.test(navigator.userAgent);
-  // V63: LINE偵測，但不預設顯示紅框，直到定位結果出來再判斷
+  if (isLine) {
+    // V63 邏輯: 這裡不預設顯示，等定位後決定是否警告
+  }
 }
 
-// === V63: AI 核心邏輯 (精確分流) ===
+// === AI 核心邏輯 ===
 function updateAiHint(acc) {
   const box = document.getElementById('aiHintBox');
   const shareBtn = document.getElementById('shareBtn');
@@ -388,13 +400,11 @@ function updateAiHint(acc) {
   // 2. LINE 環境分流
   if (isLine) {
     if (acc > 50) {
-      // 訊號差 -> 不准分享，強制開瀏覽器
       box.innerHTML = `⚠️ <b>LINE 定位誤差過大 (±${acc}m)！</b><br>數據不可用。👆 <b>請務必點擊【瀏覽器開啟】</b>`;
       box.style.borderColor = "#ff5722"; box.style.background = "#fbe9e7"; box.style.color = "#d84315";
       browserBtn.classList.add('urgent-flash');
       shareBtn.classList.remove('share-flash');
     } else {
-      // 訊號好 -> 幸運 -> 允許分享
       box.innerHTML = `✅ <b>LINE 訊號鎖定 (±${acc}m)！</b><br>👇 <b>請快按【分享定位】</b>`;
       box.style.borderColor = "#4caf50"; box.style.background = "#e8f5e9"; box.style.color = "#2e7d32";
       browserBtn.classList.remove('urgent-flash');
@@ -403,13 +413,16 @@ function updateAiHint(acc) {
     return;
   }
 
-  // 3. 標準瀏覽器環境
+  // 3. 標準瀏覽器
   if (acc <= 30) {
     box.innerHTML = `✅ <b>衛星已鎖定 (±${acc}m)！</b><br>位置精準，請再次按下分享！`;
     box.style.borderColor = "#4caf50"; box.style.background = "#e8f5e9"; box.style.color = "#2e7d32";
     shareBtn.classList.add('share-flash'); 
+  } else if (acc <= 150) {
+    box.innerHTML = `⚠️ 訊號微弱 (±${acc}m)，請盡量把手機朝向看的到天空的地方...<br>但請<b>先按分享</b>，讓搜救人員知道大概位置！`;
+    box.style.borderColor = "#ff9800"; box.style.background = "#fff3e0"; box.style.color = "#ef6c00";
+    shareBtn.classList.add('share-flash'); 
   } else {
-    // 溫暖引導
     box.innerHTML = `👋 <b>您好，我是您的搜救助手。</b><br>請將手機朝向空曠處天空...<br>👇 <b>請等待定位，並按下【分享定位】</b>`;
     box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
     shareBtn.classList.add('share-flash'); 
@@ -433,7 +446,7 @@ function handlePositionSuccess(p) {
   gpsLat = c.latitude; gpsLon = c.longitude;
   const acc = Math.round(c.accuracy);
   
-  updateAiHint(acc); // V63 邏輯核心
+  updateAiHint(acc);
 
   document.getElementById('gpsDisplayVal').innerHTML = `<span>${gpsLat.toFixed(5)},</span> <span>${gpsLon.toFixed(5)}</span>`;
   globalInfo.acc = `±${acc}m`; 
@@ -465,11 +478,15 @@ function handlePositionError(e) {
   }
 }
 
-// ... (功能函數與前版相同，省略重複代碼以節省空間，確保 V62 功能完整保留) ...
-// (包含: SOS, TWD, GPX, Map, Track, Share 邏輯，與 V62 一致)
+// ... (功能函數) ...
 function sanitizeTrackData() { trackHistory = trackHistory.map(p => { let t = new Date(p.time); if(isNaN(t.getTime())) t=new Date(); p.time=t.toISOString(); return p; }); localStorage.setItem('track_history', JSON.stringify(trackHistory)); }
 function initMap() { map = L.map('map', {zoomControl: false, dragging: false, touchZoom: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 16, crossOrigin: true }).addTo(map); }
-function initTrackMap() { if(trackMap) trackMap.remove(); trackMap = L.map('trackMap', {zoomControl: false}).setView([23.6, 120.9], 7); L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 16, crossOrigin: true }).addTo(trackMap); }
+function initTrackMap() { 
+  if(trackMap) trackMap.remove(); 
+  trackMap = L.map('trackMap', {zoomControl: false}).setView([23.6, 120.9], 7); 
+  // V64: 確保 maxZoom 限制，防止手機縮放到無圖層
+  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 16, crossOrigin: true }).addTo(trackMap); 
+}
 function toggleMapLock() { const btn = document.querySelector('.map-lock-btn'); isMapLocked = !isMapLocked; if (isMapLocked) { map.dragging.disable(); map.touchZoom.disable(); btn.innerText = "🔓 解鎖地圖"; btn.style.background = "rgba(0,0,0,0.6)"; } else { map.dragging.enable(); map.touchZoom.enable(); btn.innerText = "🔒 鎖定地圖"; btn.style.background = "#E91E63"; } }
 function getDistance(lat1, lon1, lat2, lon2) { const R = 6371e3; const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180; const Δφ = (lat2-lat1) * Math.PI/180, Δλ = (lon2-lon1) * Math.PI/180; const a = Math.sin(Δφ/2)*Math.sin(Δφ/2) + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)*Math.sin(Δλ/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 function getBearing(startLat, startLng, destLat, destLng) { startLat = toRad(startLat); startLng = toRad(startLng); destLat = toRad(destLat); destLng = toRad(destLng); const y = Math.sin(destLng - startLng) * Math.cos(destLat); const x = Math.cos(startLat) * Math.sin(destLat) - Math.sin(startLat) * Math.cos(destLat) * Math.cos(destLng - startLng); return (toDeg(Math.atan2(y, x)) + 360) % 360; }
@@ -506,7 +523,44 @@ function startSOS() { document.getElementById('sosOverlay').style.display='flex'
 function stopSOS() { document.getElementById('sosOverlay').style.display='none'; location.reload(); }
 function convertFrom(t) { try { let lat=0,lon=0; if(t==='dd'){ lat=parseFloat(document.getElementById('ddN').value); lon=parseFloat(document.getElementById('ddE').value); } else if(t==='dms'){ lat=parseFloat(document.getElementById('dmsN_d').value||0)+parseFloat(document.getElementById('dmsN_m').value||0)/60+parseFloat(document.getElementById('dmsN_s').value||0)/3600; lon=parseFloat(document.getElementById('dmsE_d').value||0)+parseFloat(document.getElementById('dmsE_m').value||0)/60+parseFloat(document.getElementById('dmsE_s').value||0)/3600; } else if(t==='dmm'){ lat=parseFloat(document.getElementById('dmmN_d').value||0)+parseFloat(document.getElementById('dmmN_m').value||0)/60; lon=parseFloat(document.getElementById('dmmE_d').value||0)+parseFloat(document.getElementById('dmmE_m').value||0)/60; } else if(t==='twd'){ const x=parseFloat(document.getElementById('twdX').value); const y=parseFloat(document.getElementById('twdY').value); const is97=document.querySelector('input[name="twdType"]:checked').value==='97'; const res=tm2ToLatLon(x,y,is97?TWD97_A:TWD67_A,is97?TWD97_F:TWD67_F,LON0,K0,DX,DY); lat=res.lat; lon=res.lon; if(!is97){lat+=0.00001;lon+=0.00001;} } if(isNaN(lat)||isNaN(lon)) throw Error; formLat=lat; formLon=lon; updateAllFields(lat,lon); } catch(e) { alert("數值錯誤"); } }
 function updateAllFields(lat, lon) { lat=Math.abs(lat); lon=Math.abs(lon); document.getElementById('ddN').value=formLat.toFixed(6); document.getElementById('ddE').value=formLon.toFixed(6); const dmmN_d=Math.floor(lat), dmmN_m=(lat-dmmN_d)*60; const dmmE_d=Math.floor(lon), dmmE_m=(lon-dmmE_d)*60; document.getElementById('dmmN_d').value=dmmN_d; document.getElementById('dmmN_m').value=dmmN_m.toFixed(4); document.getElementById('dmmE_d').value=dmmE_d; document.getElementById('dmmE_m').value=dmmE_m.toFixed(4); const dmsN_d=Math.floor(lat), dmsN_m_f=(lat-dmsN_d)*60, dmsN_m=Math.floor(dmsN_m_f), dmsN_s=(dmsN_m_f-dmsN_m)*60; const dmsE_d=Math.floor(lon), dmsE_m_f=(lon-dmsE_d)*60, dmsE_m=Math.floor(dmsE_m_f), dmsE_s=(dmsE_m_f-dmsE_m)*60; document.getElementById('dmsN_d').value=dmsN_d; document.getElementById('dmsN_m').value=dmsN_m; document.getElementById('dmsN_s').value=dmsN_s.toFixed(2); document.getElementById('dmsE_d').value=dmsE_d; document.getElementById('dmsE_m').value=dmsE_m; document.getElementById('dmsE_s').value=dmsE_s.toFixed(2); const is97=document.querySelector('input[name="twdType"]:checked').value==='97'; const twd=latLonToTM2(lat,lon,is97?TWD97_A:TWD67_A,is97?TWD97_F:TWD67_F,LON0,K0,DX,DY); document.getElementById('twdX').value=Math.round(twd.x); document.getElementById('twdY').value=Math.round(twd.y); }
-function switchTab(t){ document.querySelectorAll('.tab-btn,.page-section').forEach(e=>e.classList.remove('active')); if(t==='locate'){ document.querySelectorAll('.tab-btn')[0].classList.add('active'); document.getElementById('page-locate').classList.add('active'); if(map) setTimeout(()=>{map.invalidateSize();map.setZoom(16);},200); } else if(t==='track'){ document.querySelectorAll('.tab-btn')[1].classList.add('active'); document.getElementById('page-track').classList.add('active'); updateTrackUI(); initTrackMap(); if(trackMap){ setTimeout(()=>{ trackMap.invalidateSize(); if(trackHistory.length>0){ const ll=trackHistory.map(p=>[p.lat,p.lon]); const b=L.latLngBounds(ll); trackMap.fitBounds(b,{padding:[50,50],maxZoom:16}); } },200); } } else{ document.querySelectorAll('.tab-btn')[2].classList.add('active'); document.getElementById('page-convert').classList.add('active'); } }
+
+// === V64 Fix: 切換分頁時的雙重地圖渲染保險 ===
+function switchTab(t) { 
+  document.querySelectorAll('.tab-btn,.page-section').forEach(e=>e.classList.remove('active')); 
+  
+  if(t==='locate') { 
+    document.querySelectorAll('.tab-btn')[0].classList.add('active'); 
+    document.getElementById('page-locate').classList.add('active'); 
+    if(map) setTimeout(()=>{map.invalidateSize();map.setZoom(16);},200); 
+  } else if(t==='track') { 
+    document.querySelectorAll('.tab-btn')[1].classList.add('active'); 
+    document.getElementById('page-track').classList.add('active'); 
+    updateTrackUI(); 
+    if(trackMap){ 
+      // V64: 延遲300ms + 雙重 invalidate 確保手機版渲染
+      setTimeout(()=>{ 
+        trackMap.invalidateSize(); 
+        if(trackHistory.length>0){ 
+           // 清除舊圖層 (Polyline, Markers)
+           trackMap.eachLayer(l => { if(l instanceof L.Polyline || l instanceof L.CircleMarker) trackMap.removeLayer(l); });
+           
+           // 重新繪製
+           const ll=trackHistory.map(p=>[p.lat,p.lon]); 
+           const b=L.latLngBounds(ll); 
+           L.polyline(ll, {color: 'red', weight: 4}).addTo(trackMap);
+           L.circleMarker(ll[0], {color: 'green', radius: 6}).addTo(trackMap).bindPopup("起點");
+           L.circleMarker(ll[ll.length-1], {color: 'blue', radius: 6}).addTo(trackMap).bindPopup("終點");
+           
+           // 安全縮放 (Cap at 16)
+           trackMap.fitBounds(b,{padding:[50,50], maxZoom:16}); 
+        }
+      }, 300); 
+    } 
+  } else { 
+    document.querySelectorAll('.tab-btn')[2].classList.add('active'); 
+    document.getElementById('page-convert').classList.add('active'); 
+  } 
+}
 </script>
 </body>
 </html>
