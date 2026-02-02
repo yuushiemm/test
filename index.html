@@ -205,7 +205,8 @@
 
     <div id="aiHintBox">
       👋 您好！我是您的搜救助手。<br>
-      請依照指示操作，我會協助您脫困。
+      請依照指示操作，我會協助您取得定位。
+      請先等待GPS訊號~~~
     </div>
 
     <div class="primary-action-area">
@@ -214,7 +215,8 @@
 
     <div id="permGuide">
       <h3>🚫 定位權限被關閉</h3>
-      <p>請點擊網址列「🔒」開啟位置權限</p>
+      <p>請點擊右上角 ┇ 設定>網站設定>位置>將不允許清單移除~</p>
+      <p>然後重新讀取網頁，開啟位置權限。</p>  
       <button class="perm-btn" onclick="startSmartLocate()">✅ 重試</button>
     </div>
 
@@ -377,7 +379,7 @@ function updateAiHint(acc) {
   
   // 1. 電腦版
   if (isDesktop) {
-    box.innerHTML = `💻 <b>偵測為電腦版本 (誤差 ±${acc}m)</b><br>定位僅供參考，請勿用於實際搜救。`;
+    box.innerHTML = `💻 <b>偵測為電腦版本 (誤差 ±${acc}m)</b><br>定位僅供參考。`;
     box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
     shareBtn.classList.remove('share-flash');
     return;
@@ -387,13 +389,13 @@ function updateAiHint(acc) {
   if (isLine) {
     if (acc > 50) {
       // 訊號差 -> 不准分享，強制開瀏覽器
-      box.innerHTML = `⚠️ <b>LINE 定位誤差過大 (±${acc}m)！</b><br>數據不可用。👇 <b>請務必點擊【瀏覽器開啟】</b>`;
+      box.innerHTML = `⚠️ <b>LINE 定位誤差過大 (±${acc}m)！</b><br>數據不可用。👆 <b>請務必點擊【瀏覽器開啟】</b>`;
       box.style.borderColor = "#ff5722"; box.style.background = "#fbe9e7"; box.style.color = "#d84315";
       browserBtn.classList.add('urgent-flash');
       shareBtn.classList.remove('share-flash');
     } else {
       // 訊號好 -> 幸運 -> 允許分享
-      box.innerHTML = `✅ <b>LINE 訊號鎖定 (±${acc}m)！</b><br>👆 <b>請快按【分享定位】</b>`;
+      box.innerHTML = `✅ <b>LINE 訊號鎖定 (±${acc}m)！</b><br>👇 <b>請快按【分享定位】</b>`;
       box.style.borderColor = "#4caf50"; box.style.background = "#e8f5e9"; box.style.color = "#2e7d32";
       browserBtn.classList.remove('urgent-flash');
       shareBtn.classList.add('share-flash');
@@ -408,7 +410,7 @@ function updateAiHint(acc) {
     shareBtn.classList.add('share-flash'); 
   } else {
     // 溫暖引導
-    box.innerHTML = `👋 <b>您好，我是您的搜救助手。</b><br>請將手機朝向天空...<br>👇 <b>請等待定位，並按下【分享定位】</b>`;
+    box.innerHTML = `👋 <b>您好，我是您的AI助手。</b><br>請將手機朝向空曠處天空...<br>👇 <b>請等待定位，並按下【分享定位】</b>`;
     box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
     shareBtn.classList.add('share-flash'); 
   }
@@ -416,7 +418,9 @@ function updateAiHint(acc) {
 
 function startSmartLocate() {
   const box = document.getElementById('aiHintBox');
-  if(!navigator.geolocation) { box.innerHTML="❌ 設備不支援定位"; return; }
+  if(!navigator.geolocation) { box.innerHTML="❌ 設備不支援定位，
+    <p>請點擊右上角 ┇ 設定>網站設定>位置>將不允許清單移除~</p>
+      <p>然後重新讀取網頁，開啟位置權限。</p>"; return; }
   if(watchId!==null) navigator.geolocation.clearWatch(watchId);
   
   watchId = navigator.geolocation.watchPosition(
@@ -458,6 +462,8 @@ function handlePositionError(e) {
     setTimeout(() => { navigator.geolocation.getCurrentPosition(handlePositionSuccess, null, {enableHighAccuracy:true}); }, 2000);
   } else {
     box.innerHTML = '❌ 定位失敗 - 請檢查手機權限';
+    <p>請點擊右上角 ┇ 設定>網站設定>位置>將不允許清單移除~</p>
+    <p>然後重新讀取網頁，開啟位置權限。</p>
     box.style.borderColor = "red"; box.style.background = "#ffebee"; box.style.color = "#c62828";
     document.getElementById('permGuide').style.display = 'block';
   }
@@ -508,3 +514,4 @@ function switchTab(t){ document.querySelectorAll('.tab-btn,.page-section').forEa
 </script>
 </body>
 </html>
+
