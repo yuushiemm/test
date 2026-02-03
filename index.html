@@ -391,7 +391,7 @@ function updateAiHint(acc) {
   
   // 1. 電腦版
   if (isDesktop) {
-    box.innerHTML = `💻 <b>偵測為電腦版本 (誤差 ±${acc}m)</b><br>定位僅供參考，請勿用於實際搜救。`;
+    box.innerHTML = `💻 <b>偵測為電腦版本 (誤差 ±${acc}m)</b><br>定位僅供參考。`;
     box.style.borderColor = "#2196f3"; box.style.background = "#e3f2fd"; box.style.color = "#0d47a1";
     shareBtn.classList.remove('share-flash');
     return;
@@ -431,7 +431,7 @@ function updateAiHint(acc) {
 
 function startSmartLocate() {
   const box = document.getElementById('aiHintBox');
-  if(!navigator.geolocation) { box.innerHTML="❌ 設備不支援定位"; return; }
+  if(!navigator.geolocation) { box.innerHTML="❌ 設備不支援定位，請點擊右上角 ┇ 設定>網站設定>位置>將不允許清單移除。再重新定位"; return; }
   if(watchId!==null) navigator.geolocation.clearWatch(watchId);
   
   watchId = navigator.geolocation.watchPosition(
@@ -472,7 +472,7 @@ function handlePositionError(e) {
     box.innerHTML = `⚠️ 連線逾時，正在自動重試...`;
     setTimeout(() => { navigator.geolocation.getCurrentPosition(handlePositionSuccess, null, {enableHighAccuracy:true}); }, 2000);
   } else {
-    box.innerHTML = '❌ 定位失敗 - 請檢查手機權限';
+    box.innerHTML = '❌ 定位失敗 - 請檢查手機權限，請點擊右上角 ┇ 設定>網站設定>位置>將不允許清單移除。';
     box.style.borderColor = "red"; box.style.background = "#ffebee"; box.style.color = "#c62828";
     document.getElementById('permGuide').style.display = 'block';
   }
@@ -564,3 +564,4 @@ function switchTab(t) {
 </script>
 </body>
 </html>
+
